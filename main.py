@@ -3,30 +3,29 @@
 #                                                                            #
 # See https://github.com/SRPoulsen/Physics-6810-Project for revision history #
 #                                                                            #
+# This file contains the main framework of the game, as well as the command  #
+# to actually intialize and run the game. This file is the one that should   #
+# be run in terminal to play the game.                                       #
+#                                                                            #
 ##############################################################################
 
 from appJar import gui
+import script
 
 class Game:
     def __init__(self):
 
-        # get name and other student info from GUI. pass to student constructor
-        # save our newly created student
-        #self.mainStudent = Student(self.gui.getStudentName())
         self.student = Student()
         self.gui = GuiFormatter(Clock(self.processTick), self.student)
-        self.gameIsOver = False
 
-        self.gui.ready()
+        self.gui.ready()               #Launches gui after everything else has been processed
 
-    def processTick(self, day, hour):  #Main method: Processes all functions that need to update every hour
+    def processTick(self, day, hour):  #Main method: Processes all functions that need to update every hour/tick
         self.student.expTick()
         self.student.stressTick()
-        #if self.student.stress >= 100:
-            #self.gameIsOver = True
-        #if self.gameIsOver:
-            #self.gui.gameOver()
         self.gui.updateHUD(day, hour, self.student)
+        if self.student.isTooStressed:
+            self.gui.gameOver()
 
 
 class GuiFormatter:
@@ -51,8 +50,9 @@ class GuiFormatter:
         self.createStatusIndicators()
         self.createGuiButtons()
         self.addSeperators()
-        self.initializeSubWindow("Carmen", "This is a test of the carmen app")
-        self.initializeSubWindow("ReportCard", "This is a test of the report card")
+        self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
+        self.initializeSubWindow("Report Card", "This is a test of the report card")
+        self.initializeSubWindow("Help", script.helpWindow())
 
         #Initialize the clock to run at "slow" speed, then begin looping through runClock
         self.app.setPollTime(self.clock.clockSpeed)
@@ -66,7 +66,7 @@ class GuiFormatter:
     def createAndFormatGui(self):              #Creates and formats the main gui
         self.app = gui("Control Window")
         self.app.setSize(700,600)
-        #self.app.setResizable(False)
+        self.app.setLocation(650, 100)
         self.app.setFont(20)
         self.app.setStretch("both")
         self.app.setSticky("news")
@@ -85,19 +85,20 @@ class GuiFormatter:
 
     def createGuiButtons(self):                #Creates all the buttons for gui
         self.app.setSticky("nsew")
-        self.app.addButton("Study", self.studyButton, 5, 0, 1)
-        self.app.addButton("Relax", self.relaxButton, 5, 1, 1)
-        self.app.addButton("Sleep", self.sleepButton, 5, 2, 1)
+        self.app.addButton("Study", self.studyButton, 5, 0)
+        self.app.addButton("Relax", self.relaxButton, 5, 1)
+        self.app.addButton("Sleep", self.sleepButton, 5, 2)
         self.app.setButtonFg("Sleep", "Green")
-        self.app.addButton("Play", self.playButton, 6, 0, 1)
-        self.app.addButton("Pause", self.pauseButton, 6, 1, 1)
-        self.app.addButton("Save", self.saveGame, 6, 2, 1)
-        self.app.addButton("Slow", self.slowButton, 7, 0, 1)
-        self.app.addButton("Medium", self.medButton, 7, 1, 1)
-        self.app.addButton("Fast", self.fastButton, 7, 2, 1)
+        self.app.addButton("Play", self.playButton, 6, 0)
+        self.app.addButton("Pause", self.pauseButton, 6, 1)
+        self.app.addButton("Save", self.saveGame, 6, 2)
+        self.app.addButton("Slow", self.slowButton, 7, 0)
+        self.app.addButton("Medium", self.medButton, 7, 1)
+        self.app.addButton("Fast", self.fastButton, 7, 2)
         self.app.setButtonFg("Slow", "Green")
-        self.app.addButton("Grades", self.gradesButton, 8, 0, 1)
-        self.app.addButton("Report", self.reportCardButton, 8, 1, 1)
+        self.app.addButton("Grades", self.gradesButton, 8, 0)
+        self.app.addButton("Report Card", self.reportCardButton, 8, 1)
+        self.app.addButton("Help", self.helpButton, 8, 2)
 
     def addSeperators(self):
         self.app.addHorizontalSeparator(0,0,3, colour="Black")
@@ -114,7 +115,10 @@ class GuiFormatter:
 
     def initializeSubWindow(self, label, text):    #Creates a subWindow then immediatly hides it
         self.app.startSubWindow(label, modal = False)
+        self.app.setFont(15)
         self.app.addMessage(label + "Label", text)
+        #self.app.setSize(400,600)
+        self.app.setLocation(100, 100)
         self.app.stopSubWindow()
 
     #Button functions
@@ -157,10 +161,17 @@ class GuiFormatter:
         self.app.setPollTime(self.clock.clockSpeed)
 
     def gradesButton(self):                    #Open "carmen" subwindow
+        self.app.destroySubWindow("Carmen")
+        self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
         self.app.showSubWindow("Carmen", hide = True)
 
     def reportCardButton(self):                #Open "Report Card" subwindow
-        self.app.showSubWindow("ReportCard", hide = True)
+        self.app.destroySubWindow("Report Card")
+        self.initializeSubWindow("Report Card", "This is a test of the report card")
+        self.app.showSubWindow("Report Card", hide = True)
+
+    def helpButton(self):                      #Open "Help" subwindow
+        self.app.showSubWindow("Help", hide = True)
 
     #General functions
 
@@ -183,6 +194,7 @@ class GuiFormatter:
         self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[day % 7]))
 
     def getStudentName(self):                        #Prompts player to enter their name, passes it to student
+        self.app.setLocation(650, 100)
         name = self.app.stringBox("Welcome To OSU!", "Please Type Name Below")
         if name == None or name.isspace() or len(name) == 0:
             self.app.warningBox("Invalid Entry", "Please Enter Name")
@@ -192,10 +204,10 @@ class GuiFormatter:
     def saveGame(self):                              #TODO: Exports a file that saves gamestate to be opened later
         print(self.student.name)
 
-    def ready(self):                                 #Launch the GUI window
+    def ready(self):                                 #Launch the gui window
         self.app.go()
 
-    def gameOver(self):
+    def gameOver(self):                              #Alerts player that they've lost, destroys gui
         self.app.warningBox("Game Over", "Sorry! You Lost.")
         self.app.stop()
 
@@ -245,6 +257,7 @@ class Student:
         self.expLevel = 1
         self.exp = 0
         self.stress = 0
+        self.isTooStressed = False
         self.energy = 100
         self.stressRate = 1.5    #per hour
         self.expRate = 5       #per hour
@@ -264,13 +277,16 @@ class Student:
 
     def stressTick(self):
         if self.studentState['studying']:
-            self.stress += self.stressRate
+            self.stress += self.getStressRate()
         if self.studentState['relaxing']:
-            self.stress -= self.stressRate
+            self.stress -= self.getStressRate()
         if self.studentState['sleeping']:
-            self.stress -= 0.5*self.stressRate
+            self.stress -= 0.25*self.getStressRate()
         if self.stress < 0:
             self.stress = 0
+        if self.stress >=100:
+            #self.isTooStressed = True
+            self.stress = 100
 
     def expTick(self):
         if self.studentState['studying']:
@@ -297,36 +313,31 @@ class SaveState:          #TODO: Nothing in this class works yet, do not call or
 x = Game()
 
 #Testing Notes:
-#   Fast speed set to 50 instead of 250
-#   Tick rate for exp and stress is too fast
-#   Reading in name is disabled
-#   Game over is disabled
+#   Fast speed set to 50 instead of 250 (Clock speedF function)
+#   Tick rate for exp and stress is too fast (Studen __init__ function)
+#   Reading in name is disabled (GuiFormatter __init__ function)
+#   Game over is disabled, instead caps stress at 100 (Student stressTick function)
 
 
 #TODO:
-#Add functionality to energy level (in student)
+##Add functionality to energy level (in student)
 #   Go from 100 to 75 over course of normal day (16 hours)
 #   Include popup warning when you haven't sleept in a long time (at 50?)
 #   below 50 increases stress, decreases exp gain
 #   below 25, increases stress, decreases exp gain further
-
-#Start on script
+##Start on script
 #   Create Script file that can be called by GuiFormatter
-
-#Overall improvement to layout
+##Overall improvement to layout
 #   Figure out the best layout for buttons
 #   Where will text be displayed?
 #   Name entry box needs script and should be loaded on center of screen
-
-#Determine how to save and load the game
+##Determine how to save and load the game
 #   need gameState dict which contains all important info (day, hour, exp, report card....)
-
-#Stretch goal: Include functionality to allow player to create a weekly schedule
+##Stretch goal: Include functionality to allow player to create a weekly schedule
 #   pre-set actions for certain times and then let the program autorun their schedule
-
-#Create Calculations class and/or library which will handle all requests for probablilities and other advanced calculations
-#   consider moving getExpRate and getStressRate to Math class/library
-
-#Create Course class
-
-#When Game is over, instead of closing the Gui right away, tell the player their stats
+##Create Calculations library which will handle all requests for probablilities and other advanced calculations
+#   consider moving getExpRate and getStressRate to math library
+##Create Course class
+##When Game is over, instead of closing the Gui right away, tell the player their stats
+##Going to need a "pack up" function which returns a list of strings
+#   These lists will get passed to functions in script.py in order to fill out things like the report card
