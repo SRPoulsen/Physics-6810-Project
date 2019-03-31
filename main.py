@@ -5,7 +5,7 @@ class Game:
 
         # get name and other student info from GUI. pass to student constructor
         # save our newly created student
-        #self.mainStudent = Student(self.gui.getStudentInfo())
+        #self.mainStudent = Student(self.gui.getStudentName())
         self.student = Student()
         self.gui = GuiFormatter(Clock(self.processTick), self.student)
 
@@ -55,37 +55,48 @@ class Clock:
 
 class GuiFormatter:
     created = False                             #There has never been a created GUI before
+
+    #Groups of buttons where only one button from each group is allowed to be active
     speedGroup = ['Slow', 'Medium', 'Fast']
     timeGroup = ['Play', 'Pause']
     actionGroup = ['Study', 'Relax', 'Sleep']
 
-    def __init__(self, clk, ss):                #Only allows one GUI to be created
-        if GuiFormatter.created:
+    def __init__(self, clk, ss):
+        if GuiFormatter.created:            #Only allows one GUI to be created
             raise Exception('Instance already exists')
 
-        GuiFormatter.created = True                           #There has now been a created GUI
-        self.clock = clk                                      #Save the instance of the clock
-        self.student = ss
+        GuiFormatter.created = True          #There has now been a created GUI
+        self.clock = clk                     #Save the instance of the clock
+        self.student = ss                    #Save the instance of the student
 
-        #Formatting for the main control window of the game
+        #Calls on functions (below) to create and format the gui, as well as subWindows
+        self.createAndFormatGui()
+        self.createDateTimeDisplay()
+        self.createStatusIndicators()
+        self.createGuiButtons()
+        self.initializeSubWindow("Carmen", "This is a test of the carmen app")
+        self.initializeSubWindow("ReportCard", "This is a test of the report card")
+
+        #Initialize the clock to run at "slow" speed, then begin looping through runClock
+        self.app.setPollTime(self.clock.clockSpeed)
+        self.app.registerEvent(self.clock.runClock)
+
+        #Prompt user for their name, passes name to student
+        self.student.name = self.getStudentName()
+
+    #GUI formatting and initialization functions
+
+    def createAndFormatGui(self):              #Creates and formats the main gui
         self.app = gui("Control Window")
         self.app.setSize(800,500)
 
-        #Date/Time/Pause indicators
+    def createDateTimeDisplay(self):           #Creates the Date and Time display on gui
         self.app.addLabel("PauseLabel", "Paused", 0, 0)
         self.app.setLabelFg("PauseLabel", "red")
         self.app.addLabel("lb1", "Day: 0\tHour: 0", 0, 1)
         self.app.addLabel("DayOfWeek", "Sunday", 0, 2)
 
-        #Experience/Stress labels and meters
-        self.app.addLabel("expLabel", "Experience (Level 1)", 1, 0, 1)
-        self.app.addLabel("strLabel", "Stress", 2, 0, 1)
-        self.app.addMeter("Experience", 1, 1, 2)
-        self.app.setMeterFill("Experience", "Green")
-        self.app.addMeter("Stress", 2, 1, 2)
-        self.app.setMeterFill("Stress", "Red")
-
-        #Game Control buttons
+    def createGuiButtons(self):                #Creates all the buttons for gui
         self.app.addButton("Study", self.studyButton, 3, 0)
         self.app.addButton("Relax", self.relaxButton, 3, 1)
         self.app.addButton("Sleep", self.sleepButton, 3, 2)
@@ -100,21 +111,18 @@ class GuiFormatter:
         self.app.addButton("See Grades", self.gradesButton, 6, 0)
         self.app.addButton("See Report Card", self.reportCardButton, 6, 1)
 
-        #Initialize then hide the "Carmen" subwindow
-        self.app.startSubWindow("Carmen", modal = False)
-        self.app.addLabel("CarmenLabel", "This is a test of the carmen app")
+    def createStatusIndicators(self):          #Creates the meters and labels that tell the players their stats on gui
+        self.app.addLabel("expLabel", "Experience (Level 1)", 1, 0, 1)
+        self.app.addLabel("strLabel", "Stress", 2, 0, 1)
+        self.app.addMeter("Experience", 1, 1, 2)
+        self.app.setMeterFill("Experience", "Green")
+        self.app.addMeter("Stress", 2, 1, 2)
+        self.app.setMeterFill("Stress", "Red")
+
+    def initializeSubWindow(self, label, text):    #Creates a subWindow then immediatly hides it
+        self.app.startSubWindow(label, modal = False)
+        self.app.addMessage(label + "Label", text)
         self.app.stopSubWindow()
-
-        #Intialize then hide the "Report Card" subWindow
-        self.app.startSubWindow("Report Card", modal = False)
-        self.app.addLabel("ReportCardLabel", "This is a test of the report card")
-        self.app.stopSubWindow()
-
-        #Initialize the clock to run at "slow" speed, then begin looping through runClock
-        self.app.setPollTime(self.clock.clockSpeed)
-        self.app.registerEvent(self.clock.runClock)
-
-        self.student.name = self.getStudentInfo()
 
     #Button functions
 
@@ -159,7 +167,7 @@ class GuiFormatter:
         self.app.showSubWindow("Carmen", hide = True)
 
     def reportCardButton(self):                #Open "Report Card" subwindow
-        self.app.showSubWindow("Report Card", hide = True)
+        self.app.showSubWindow("ReportCard", hide = True)
 
     #General functions
 
@@ -181,11 +189,11 @@ class GuiFormatter:
             self.app.setLabel("expLabel", "Experience (Level " + str(student.expLevel) + ")")
         self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[day % 7]))
 
-    def getStudentInfo(self):                        #TODO: Prompts player to enter their name, passes it to student
+    def getStudentName(self):                        #Prompts player to enter their name, passes it to student
         name = self.app.stringBox("Welcome To OSU!", "Please Type Name Below")
         if name == None or name.isspace() or len(name) == 0:
             self.app.warningBox("Invalid Entry", "Please Enter Name")
-            name = self.getStudentInfo()
+            name = self.getStudentName()
         return name
 
     def saveGame(self):                              #TODO: Exports a file that saves gamestate to be opened later
@@ -218,9 +226,9 @@ class Student:
         self.exp = 0
         self.stress = 0
         self.energy = 100
-        self.friend = False
         self.stressRate = 1.5    #per hour
         self.expRate = 1.5       #per hour
+        self.friend = False
 
     def getExpRate(self):
         if self.friend:
@@ -251,6 +259,7 @@ class Student:
             self.exp = 0
             self.expLevel += 1
 
+
 #Start the game
 x = Game()
 
@@ -261,24 +270,24 @@ x = Game()
 #   below 50 increases stress, decreases exp gain
 #   below 25, increases stress, decreases exp gain further
 
-#Add option to put in your name at the beginning of the game
 #Start on script
-#Subwindow to display grades
+#   Create Script file that can be called by GuiFormatter
+
 #If stress reaches 100, game is over
 
 #Overall improvement to layout
 #   Figure out the best layout for buttons
 #   Where will text be displayed?
 #   Seperators between button groups
+#   Name entry box needs script and should be loaded on center of screen
 
 #Determine how to save and load the game
-#Possibly include functionality to allow player to create a weekly schedule
+#   need gameState dict which contains all important info (day, hour, exp, report card....)
+
+#Stretch goal: Include functionality to allow player to create a weekly schedule
 #   pre-set actions for certain times and then let the program autorun their schedule
 
 #Create Math class which will handle all requests for probablilities and other advanced calculations
 #   consider moving getExpRate and getStressRate to Math class
 
-'''    #Initialize then hide the name entry subwindow
-    self.app.startSubWindow("Welcome To OSU", modal = False)
-    self.app.addEntry("e1")
-    self.app.stopSubWindow()'''
+#Create Course class
