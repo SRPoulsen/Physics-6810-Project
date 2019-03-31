@@ -1,3 +1,10 @@
+##############################################################################
+# Created by: Sabrina Poulsen                                                #
+#                                                                            #
+# See https://github.com/SRPoulsen/Physics-6810-Project for revision history #
+#                                                                            #
+##############################################################################
+
 from appJar import gui
 
 class Game:
@@ -8,49 +15,18 @@ class Game:
         #self.mainStudent = Student(self.gui.getStudentName())
         self.student = Student()
         self.gui = GuiFormatter(Clock(self.processTick), self.student)
+        self.gameIsOver = False
 
         self.gui.ready()
 
     def processTick(self, day, hour):  #Main method: Processes all functions that need to update every hour
         self.student.expTick()
         self.student.stressTick()
+        #if self.student.stress >= 100:
+            #self.gameIsOver = True
+        #if self.gameIsOver:
+            #self.gui.gameOver()
         self.gui.updateHUD(day, hour, self.student)
-
-
-class Clock:
-    WEEK_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-    def __init__(self, act):
-        self.clockDay = 0
-        self.clockHour = 0             #Start at hour = 0
-        self.clockIsRunning = False    #Start with the clock paused
-        self.clockSpeed = 1000         #1000 ms delay on clock (1 s)
-        self.action = act              #Passes in the action that should be performed every loop of runClock
-        self.dateUnlocked = True
-
-    def startClock(self):          #Changes the status to "clock is running"
-        if not self.clockIsRunning:             #Makes sure the clock wasn't already running
-            self.clockIsRunning = True
-
-    def stopClock(self):           #Changes the status to "clock isn't running"
-        self.clockIsRunning = False
-
-    def runClock(self):            #action = processTick in Game class
-        if self.clockIsRunning and self.dateUnlocked:       #Makes sure the clock is running and the date is unlocked
-            self.clockHour += 1                             #Adds one hour to the clock
-            if self.clockHour >= 24:
-                self.clockHour -= 24
-                self.clockDay += 1
-            self.action(self.clockDay, self.clockHour)
-
-    def speedS(self):              #Slowest speed (1 hour per second)
-        self.clockSpeed = 1000
-
-    def speedM(self):              #Middle speed
-        self.clockSpeed = 500
-
-    def speedF(self):              #Fasted speed
-        self.clockSpeed = 250
 
 
 class GuiFormatter:
@@ -74,6 +50,7 @@ class GuiFormatter:
         self.createDateTimeDisplay()
         self.createStatusIndicators()
         self.createGuiButtons()
+        self.addSeperators()
         self.initializeSubWindow("Carmen", "This is a test of the carmen app")
         self.initializeSubWindow("ReportCard", "This is a test of the report card")
 
@@ -82,41 +59,57 @@ class GuiFormatter:
         self.app.registerEvent(self.clock.runClock)
 
         #Prompt user for their name, passes name to student
-        self.student.name = self.getStudentName()
+        #self.student.name = self.getStudentName()           #BLANKED OUT FOR EASIER TESTING
 
     #GUI formatting and initialization functions
 
     def createAndFormatGui(self):              #Creates and formats the main gui
         self.app = gui("Control Window")
-        self.app.setSize(800,500)
+        self.app.setSize(700,600)
+        #self.app.setResizable(False)
+        self.app.setFont(20)
+        self.app.setStretch("both")
+        self.app.setSticky("news")
+        self.app.setGuiPadding(50, 5)
+        self.app.setBg("WhiteSmoke")
 
     def createDateTimeDisplay(self):           #Creates the Date and Time display on gui
-        self.app.addLabel("PauseLabel", "Paused", 0, 0)
+        self.app.setSticky("")
+        self.app.addLabel("PauseLabel", "Paused", 1, 2)
         self.app.setLabelFg("PauseLabel", "red")
-        self.app.addLabel("lb1", "Day: 0\tHour: 0", 0, 1)
-        self.app.addLabel("DayOfWeek", "Sunday", 0, 2)
+        self.app.addLabel("dateLabel", "Day: 0\tHour: 0", 1, 1)
+        self.app.addLabel("DayOfWeek", "Sunday", 1, 0)
+        self.app.setLabelWidth("PauseLabel", 50)
+        self.app.setLabelWidth("dateLabel", 50)
+        self.app.setLabelWidth("DayOfWeek", 50)
 
     def createGuiButtons(self):                #Creates all the buttons for gui
-        self.app.addButton("Study", self.studyButton, 3, 0)
-        self.app.addButton("Relax", self.relaxButton, 3, 1)
-        self.app.addButton("Sleep", self.sleepButton, 3, 2)
+        self.app.setSticky("nsew")
+        self.app.addButton("Study", self.studyButton, 5, 0, 1)
+        self.app.addButton("Relax", self.relaxButton, 5, 1, 1)
+        self.app.addButton("Sleep", self.sleepButton, 5, 2, 1)
         self.app.setButtonFg("Sleep", "Green")
-        self.app.addButton("Play", self.playButton, 4, 0)
-        self.app.addButton("Pause", self.pauseButton, 4, 1)
-        self.app.addButton("Save", self.saveGame, 4, 2)
-        self.app.addButton("Slow", self.slowButton, 5, 0)
-        self.app.addButton("Medium", self.medButton, 5, 1)
-        self.app.addButton("Fast", self.fastButton, 5, 2)
+        self.app.addButton("Play", self.playButton, 6, 0, 1)
+        self.app.addButton("Pause", self.pauseButton, 6, 1, 1)
+        self.app.addButton("Save", self.saveGame, 6, 2, 1)
+        self.app.addButton("Slow", self.slowButton, 7, 0, 1)
+        self.app.addButton("Medium", self.medButton, 7, 1, 1)
+        self.app.addButton("Fast", self.fastButton, 7, 2, 1)
         self.app.setButtonFg("Slow", "Green")
-        self.app.addButton("See Grades", self.gradesButton, 6, 0)
-        self.app.addButton("See Report Card", self.reportCardButton, 6, 1)
+        self.app.addButton("Grades", self.gradesButton, 8, 0, 1)
+        self.app.addButton("Report", self.reportCardButton, 8, 1, 1)
+
+    def addSeperators(self):
+        self.app.addHorizontalSeparator(0,0,3, colour="Black")
+        self.app.addHorizontalSeparator(4,0,3, colour="Black")
 
     def createStatusIndicators(self):          #Creates the meters and labels that tell the players their stats on gui
-        self.app.addLabel("expLabel", "Experience (Level 1)", 1, 0, 1)
-        self.app.addLabel("strLabel", "Stress", 2, 0, 1)
-        self.app.addMeter("Experience", 1, 1, 2)
+        self.app.setSticky("ew")
+        self.app.addLabel("expLabel", "Experience (Level 1)", 2, 0, 1)
+        self.app.addLabel("strLabel", "Stress", 3, 0, 1)
+        self.app.addMeter("Experience", 2, 1, 2)
         self.app.setMeterFill("Experience", "Green")
-        self.app.addMeter("Stress", 2, 1, 2)
+        self.app.addMeter("Stress", 3, 1, 2)
         self.app.setMeterFill("Stress", "Red")
 
     def initializeSubWindow(self, label, text):    #Creates a subWindow then immediatly hides it
@@ -182,7 +175,7 @@ class GuiFormatter:
         self.student.studentState[activeAction] = True
 
     def updateHUD(self, day, hour, student):         #Funtions sent to processTick, runs everytime the clock ticks
-        self.app.setLabel("lb1", "Day: " + str(day) + "\tHour: " + str(hour))
+        self.app.setLabel("dateLabel", "Day: " + str(day) + "\tHour: " + str(hour))
         self.app.setMeter("Experience", student.exp)
         self.app.setMeter("Stress", student.stress)
         if student.exp == 0:
@@ -202,18 +195,45 @@ class GuiFormatter:
     def ready(self):                                 #Launch the GUI window
         self.app.go()
 
+    def gameOver(self):
+        self.app.warningBox("Game Over", "Sorry! You Lost.")
+        self.app.stop()
 
-class SaveState:
-    def __init__(self):
-        self.save = False
 
-    @staticmethod
-    def saveGame(gameState):
-        pass
+class Clock:
+    WEEK_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-    @staticmethod
-    def loadGame(gameState):
-        pass
+    def __init__(self, act):
+        self.clockDay = 0
+        self.clockHour = 0             #Start at hour = 0
+        self.clockIsRunning = False    #Start with the clock paused
+        self.clockSpeed = 1000         #1000 ms delay on clock (1 s)
+        self.action = act              #Passes in the action that should be performed every loop of runClock
+        self.dateUnlocked = True
+
+    def startClock(self):          #Changes the status to "clock is running"
+        if not self.clockIsRunning:             #Makes sure the clock wasn't already running
+            self.clockIsRunning = True
+
+    def stopClock(self):           #Changes the status to "clock isn't running"
+        self.clockIsRunning = False
+
+    def runClock(self):            #action = processTick in Game class
+        if self.clockIsRunning and self.dateUnlocked:       #Makes sure the clock is running and the date is unlocked
+            self.clockHour += 1                             #Adds one hour to the clock
+            if self.clockHour >= 24:
+                self.clockHour -= 24
+                self.clockDay += 1
+            self.action(self.clockDay, self.clockHour)
+
+    def speedS(self):              #Slowest speed (1 hour per second)
+        self.clockSpeed = 1000
+
+    def speedM(self):              #Middle speed
+        self.clockSpeed = 500
+
+    def speedF(self):              #Fasted speed
+        self.clockSpeed = 50
 
 
 class Student:
@@ -227,7 +247,7 @@ class Student:
         self.stress = 0
         self.energy = 100
         self.stressRate = 1.5    #per hour
-        self.expRate = 1.5       #per hour
+        self.expRate = 5       #per hour
         self.friend = False
 
     def getExpRate(self):
@@ -260,8 +280,28 @@ class Student:
             self.expLevel += 1
 
 
+class SaveState:          #TODO: Nothing in this class works yet, do not call or interact with
+    def __init__(self):
+        self.save = False
+
+    @staticmethod
+    def saveGame(gameState):
+        pass
+
+    @staticmethod
+    def loadGame(gameState):
+        pass
+
+
 #Start the game
 x = Game()
+
+#Testing Notes:
+#   Fast speed set to 50 instead of 250
+#   Tick rate for exp and stress is too fast
+#   Reading in name is disabled
+#   Game over is disabled
+
 
 #TODO:
 #Add functionality to energy level (in student)
@@ -273,12 +313,9 @@ x = Game()
 #Start on script
 #   Create Script file that can be called by GuiFormatter
 
-#If stress reaches 100, game is over
-
 #Overall improvement to layout
 #   Figure out the best layout for buttons
 #   Where will text be displayed?
-#   Seperators between button groups
 #   Name entry box needs script and should be loaded on center of screen
 
 #Determine how to save and load the game
@@ -287,7 +324,9 @@ x = Game()
 #Stretch goal: Include functionality to allow player to create a weekly schedule
 #   pre-set actions for certain times and then let the program autorun their schedule
 
-#Create Math class which will handle all requests for probablilities and other advanced calculations
-#   consider moving getExpRate and getStressRate to Math class
+#Create Calculations class and/or library which will handle all requests for probablilities and other advanced calculations
+#   consider moving getExpRate and getStressRate to Math class/library
 
 #Create Course class
+
+#When Game is over, instead of closing the Gui right away, tell the player their stats
