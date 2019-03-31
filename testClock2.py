@@ -2,15 +2,12 @@ from appJar import gui
 
 class Game:
     def __init__(self):
-        self.gameState = {'studying': False,
-                          'sleeping': True,
-                          'relaxing': False}
 
         # get name and other student info from GUI. pass to student constructor
         # save our newly created student
         #self.mainStudent = Student(self.gui.getStudentInfo())
-        self.gui = GuiFormatter(Clock(self.processTick), self.gameState)
-        self.student = Student(self.gui.getStudentInfo(), self.gameState)
+        self.student = Student()
+        self.gui = GuiFormatter(Clock(self.processTick), self.student)
 
         self.gui.ready()
 
@@ -31,29 +28,29 @@ class Clock:
         self.action = act              #Passes in the action that should be performed every loop of runClock
         self.dateUnlocked = True
 
-    def startClock(self):
+    def startClock(self):          #Changes the status to "clock is running"
         if not self.clockIsRunning:             #Makes sure the clock wasn't already running
-            self.clockIsRunning = True          #Changes the status to "clock is running"
+            self.clockIsRunning = True
 
-    def stopClock(self):
-        self.clockIsRunning = False             #Changes the status to "clock isn't running"
+    def stopClock(self):           #Changes the status to "clock isn't running"
+        self.clockIsRunning = False
 
-    def runClock(self):
+    def runClock(self):            #action = processTick in Game class
         if self.clockIsRunning and self.dateUnlocked:       #Makes sure the clock is running and the date is unlocked
             self.clockHour += 1                             #Adds one hour to the clock
             if self.clockHour >= 24:
                 self.clockHour -= 24
                 self.clockDay += 1
-            self.action(self.clockDay, self.clockHour)      #action = processTick in Game class
+            self.action(self.clockDay, self.clockHour)
 
-    def speedS(self):
-        self.clockSpeed = 1000             #Slowest speed (1 hour per second)
+    def speedS(self):              #Slowest speed (1 hour per second)
+        self.clockSpeed = 1000
 
-    def speedM(self):
-        self.clockSpeed = 500             #Middle speed
+    def speedM(self):              #Middle speed
+        self.clockSpeed = 500
 
-    def speedF(self):
-        self.clockSpeed = 250             #Fasted speed
+    def speedF(self):              #Fasted speed
+        self.clockSpeed = 250
 
 
 class GuiFormatter:
@@ -62,13 +59,13 @@ class GuiFormatter:
     timeGroup = ['Play', 'Pause']
     actionGroup = ['Study', 'Relax', 'Sleep']
 
-    def __init__(self, clk, gs):                #Only allows one GUI to be created
+    def __init__(self, clk, ss):                #Only allows one GUI to be created
         if GuiFormatter.created:
             raise Exception('Instance already exists')
 
         GuiFormatter.created = True                           #There has now been a created GUI
         self.clock = clk                                      #Save the instance of the clock
-        self.gameState = gs
+        self.student = ss
 
         #Formatting for the main control window of the game
         self.app = gui("Control Window")
@@ -108,7 +105,7 @@ class GuiFormatter:
         self.app.addLabel("CarmenLabel", "This is a test of the carmen app")
         self.app.stopSubWindow()
 
-        #Intialize then hide the "Report Card" SubWindow
+        #Intialize then hide the "Report Card" subWindow
         self.app.startSubWindow("Report Card", modal = False)
         self.app.addLabel("ReportCardLabel", "This is a test of the report card")
         self.app.stopSubWindow()
@@ -116,6 +113,8 @@ class GuiFormatter:
         #Initialize the clock to run at "slow" speed, then begin looping through runClock
         self.app.setPollTime(self.clock.clockSpeed)
         self.app.registerEvent(self.clock.runClock)
+
+        self.student.name = self.getStudentInfo()
 
     #Button functions
 
@@ -170,9 +169,9 @@ class GuiFormatter:
         self.app.setButtonFg(activeBtn, "Green")
 
     def changeActiveAction(self, activeAction):      #Turns the active action to True, others to False
-        for act in self.gameState:
-            self.gameState[act] = False
-        self.gameState[activeAction] = True
+        for act in self.student.studentState:
+            self.student.studentState[act] = False
+        self.student.studentState[activeAction] = True
 
     def updateHUD(self, day, hour, student):         #Funtions sent to processTick, runs everytime the clock ticks
         self.app.setLabel("lb1", "Day: " + str(day) + "\tHour: " + str(hour))
@@ -183,10 +182,14 @@ class GuiFormatter:
         self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[day % 7]))
 
     def getStudentInfo(self):                        #TODO: Prompts player to enter their name, passes it to student
-        return "Temp Name"
+        name = self.app.stringBox("Welcome To OSU!", "Please Type Name Below")
+        if name == None or name.isspace() or len(name) == 0:
+            self.app.warningBox("Invalid Entry", "Please Enter Name")
+            name = self.getStudentInfo()
+        return name
 
     def saveGame(self):                              #TODO: Exports a file that saves gamestate to be opened later
-        print("I don't do anything yet!")
+        print(self.student.name)
 
     def ready(self):                                 #Launch the GUI window
         self.app.go()
@@ -207,10 +210,10 @@ class SaveState:
 
 class Student:
 
-    def __init__(self, nm, gs):
+    def __init__(self):
 
-        self.name = nm
-        self.gameState = gs
+        self.studentState = {'studying': False, 'sleeping': True, 'relaxing': False}
+        self.name = 'John Doe'
         self.expLevel = 1
         self.exp = 0
         self.stress = 0
@@ -226,23 +229,23 @@ class Student:
             return self.expRate * (1/self.expLevel)
 
     def getStressRate(self):
-        if self.friend and self.gameState['studying']:
+        if self.friend and self.studentState['studying']:
             return self.stressRate * 0.75
         else:
             return self.stressRate
 
     def stressTick(self):
-        if self.gameState['studying']:
+        if self.studentState['studying']:
             self.stress += self.stressRate
-        if self.gameState['relaxing']:
+        if self.studentState['relaxing']:
             self.stress -= self.stressRate
-        if self.gameState['sleeping']:
+        if self.studentState['sleeping']:
             self.stress -= 0.5*self.stressRate
         if self.stress < 0:
             self.stress = 0
 
     def expTick(self):
-        if self.gameState['studying']:
+        if self.studentState['studying']:
             self.exp += self.getExpRate()
         if self.exp >= 100:
             self.exp = 0
@@ -253,16 +256,29 @@ x = Game()
 
 #TODO:
 #Add functionality to energy level (in student)
-#   Include popup warning when you haven't sleept in a long time
+#   Go from 100 to 75 over course of normal day (16 hours)
+#   Include popup warning when you haven't sleept in a long time (at 50?)
+#   below 50 increases stress, decreases exp gain
+#   below 25, increases stress, decreases exp gain further
+
 #Add option to put in your name at the beginning of the game
 #Start on script
 #Subwindow to display grades
+#If stress reaches 100, game is over
+
 #Overall improvement to layout
 #   Figure out the best layout for buttons
 #   Where will text be displayed?
 #   Seperators between button groups
+
 #Determine how to save and load the game
-#Possibly include functionality to allow player to create a weekly schedule, pre-set actions for certain times and then
-#let the program autocomplete their schedule
+#Possibly include functionality to allow player to create a weekly schedule
+#   pre-set actions for certain times and then let the program autorun their schedule
+
 #Create Math class which will handle all requests for probablilities and other advanced calculations
 #   consider moving getExpRate and getStressRate to Math class
+
+'''    #Initialize then hide the name entry subwindow
+    self.app.startSubWindow("Welcome To OSU", modal = False)
+    self.app.addEntry("e1")
+    self.app.stopSubWindow()'''
