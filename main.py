@@ -11,12 +11,17 @@
 
 from appJar import gui
 import script
+import courseInfo
+import calculations as calc
 
 class Game:
     def __init__(self):
 
+        self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
         self.student = Student()
-        self.gui = GuiFormatter(Clock(self.processTick), self.student)
+        self.clock = Clock(self.processTick)
+        self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState)
+        self.course1 = Course(courseInfo.mechOne())
 
         self.gui.ready()               #Launches gui after everything else has been processed
 
@@ -27,6 +32,13 @@ class Game:
         if self.student.isTooStressed:
             self.gui.gameOver()
 
+    def gatherGameState(self):
+        studentInfo = self.student.gatherStudentInfo()
+        clockInfo = self.clock.gatherClockInfo()
+        self.gameState = [studentInfo, clockInfo]
+        print("Information Gathered")
+        print(self.gameState)
+
 
 class GuiFormatter:
     created = False                             #There has never been a created GUI before
@@ -36,13 +48,14 @@ class GuiFormatter:
     timeGroup = ['Play', 'Pause']
     actionGroup = ['Study', 'Relax', 'Sleep']
 
-    def __init__(self, clk, ss):
+    def __init__(self, clk, ss, gi):
         if GuiFormatter.created:            #Only allows one GUI to be created
             raise Exception('Instance already exists')
 
         GuiFormatter.created = True          #There has now been a created GUI
         self.clock = clk                     #Save the instance of the clock
         self.student = ss                    #Save the instance of the student
+        self.gatherInfo = gi
 
         #Calls on functions (below) to create and format the gui, as well as subWindows
         self.createAndFormatGui()
@@ -77,7 +90,7 @@ class GuiFormatter:
         self.app.setSticky("")
         self.app.addLabel("PauseLabel", "Paused", 1, 2)
         self.app.setLabelFg("PauseLabel", "red")
-        self.app.addLabel("dateLabel", "Day: 0\tHour: 0", 1, 1)
+        self.app.addLabel("dateLabel", "Day: 0\tTime: 12 AM", 1, 1)
         self.app.addLabel("DayOfWeek", "Sunday", 1, 0)
         self.app.setLabelWidth("PauseLabel", 50)
         self.app.setLabelWidth("dateLabel", 50)
@@ -91,7 +104,7 @@ class GuiFormatter:
         self.app.setButtonFg("Sleep", "Green")
         self.app.addButton("Play", self.playButton, 6, 0)
         self.app.addButton("Pause", self.pauseButton, 6, 1)
-        self.app.addButton("Save", self.saveGame, 6, 2)
+        self.app.addButton("Save", self.saveButton, 6, 2)
         self.app.addButton("Slow", self.slowButton, 7, 0)
         self.app.addButton("Medium", self.medButton, 7, 1)
         self.app.addButton("Fast", self.fastButton, 7, 2)
@@ -123,25 +136,28 @@ class GuiFormatter:
 
     #Button functions
 
-    def playButton(self, btn):                 #When the "Play" button is pressed, start the clock
+    def playButton(self):                      #When the "Play" button is pressed, start the clock
         self.app.setLabel("PauseLabel", " ")
         self.changeActiveButton("Play", GuiFormatter.timeGroup)
         self.clock.startClock()
 
-    def pauseButton(self, btn):                #When the "Pause" button is pressed, stop the clock
+    def pauseButton(self):                     #When the "Pause" button is pressed, stop the clock
         self.app.setLabel("PauseLabel", "Paused")
         self.changeActiveButton("Pause", GuiFormatter.timeGroup)
         self.clock.stopClock()
 
-    def studyButton(self, btn):                #Changes studying to true, changes relax/sleep to false
+    def saveButton(self):
+        self.gatherInfo()
+
+    def studyButton(self):                     #Changes studying to true, changes relax/sleep to false
         self.changeActiveAction('studying')
         self.changeActiveButton("Study", GuiFormatter.actionGroup)
 
-    def relaxButton(self, btn):                #Changes relaxing to true, changes study/sleep to false
+    def relaxButton(self):                     #Changes relaxing to true, changes study/sleep to false
         self.changeActiveAction('relaxing')
         self.changeActiveButton("Relax", GuiFormatter.actionGroup)
 
-    def sleepButton(self, btn):                #Changes sleeping to true, changes study/relax to false
+    def sleepButton(self):                     #Changes sleeping to true, changes study/relax to false
         self.changeActiveAction('sleeping')
         self.changeActiveButton("Sleep", GuiFormatter.actionGroup)
 
@@ -186,7 +202,7 @@ class GuiFormatter:
         self.student.studentState[activeAction] = True
 
     def updateHUD(self, day, hour, student):         #Funtions sent to processTick, runs everytime the clock ticks
-        self.app.setLabel("dateLabel", "Day: " + str(day) + "\tHour: " + str(hour))
+        self.app.setLabel("dateLabel", "Day: " + str(day) + str(self.clock.militaryToAmPm(hour)))
         self.app.setMeter("Experience", student.exp)
         self.app.setMeter("Stress", student.stress)
         if student.exp == 0:
@@ -218,6 +234,7 @@ class Clock:
     def __init__(self, act):
         self.clockDay = 0
         self.clockHour = 0             #Start at hour = 0
+        self.semester = 1              #8 total semesters (4 years)
         self.clockIsRunning = False    #Start with the clock paused
         self.clockSpeed = 1000         #1000 ms delay on clock (1 s)
         self.action = act              #Passes in the action that should be performed every loop of runClock
@@ -247,8 +264,26 @@ class Clock:
     def speedF(self):              #Fasted speed
         self.clockSpeed = 50
 
+    def militaryToAmPm(self, hour): #Takes in miltiary time, returns time in AM or PM as string
+        if hour < 12 and hour != 0:
+            return "\tTime: " + str(hour) + " AM"
+        if hour == 12:
+            return "\tTime: 12 PM"
+        if hour == 0:
+            return "\tTime: 12 AM"
+        else:
+            return "\tTime: " + str(hour - 12) + " PM"
+
+    def gatherClockInfo(self):
+        day = self.clockDay
+        hr = self.clockHour
+        sem = self.semester
+        return [day, hr, sem]
+
 
 class Student:
+    stressBaseRate = 1.5    #per hour
+    expBaseRate = 5         #per hour
 
     def __init__(self):
 
@@ -259,21 +294,19 @@ class Student:
         self.stress = 0
         self.isTooStressed = False
         self.energy = 100
-        self.stressRate = 1.5    #per hour
-        self.expRate = 5       #per hour
         self.friend = False
 
     def getExpRate(self):
         if self.friend:
-            return self.expRate * (1/self.expLevel) * 1.25
+            return Student.expBaseRate * (1/self.expLevel) * 1.25
         else:
-            return self.expRate * (1/self.expLevel)
+            return Student.expBaseRate * (1/self.expLevel)
 
     def getStressRate(self):
         if self.friend and self.studentState['studying']:
-            return self.stressRate * 0.75
+            return Student.stressBaseRate * 0.75
         else:
-            return self.stressRate
+            return Student.stressBaseRate
 
     def stressTick(self):
         if self.studentState['studying']:
@@ -295,6 +328,31 @@ class Student:
             self.exp = 0
             self.expLevel += 1
 
+    def gatherStudentInfo(self):
+        nm = self.name
+        ss = self.studentState
+        lvl = self.expLevel
+        exp = self.exp
+        sts = self.stress
+        eng = self.energy
+        frd = self.friend
+        return [nm, ss, lvl, exp, sts, eng, frd]
+
+
+class Course:
+    semesterLength = 60
+
+    def __init__(self, classFunction):
+
+        cls = classFunction
+
+        self.meetingDays = cls[0]
+        self.startTime = cls[1]
+        self.endTime = cls[2]
+        self.difficulty = cls[3]
+        self.importantDates = cls[4]
+
+
 
 class SaveState:          #TODO: Nothing in this class works yet, do not call or interact with
     def __init__(self):
@@ -314,7 +372,7 @@ x = Game()
 
 #Testing Notes:
 #   Fast speed set to 50 instead of 250 (Clock speedF function)
-#   Tick rate for exp and stress is too fast (Studen __init__ function)
+#   Tick rate for exp and stress is too fast (Student __init__ function)
 #   Reading in name is disabled (GuiFormatter __init__ function)
 #   Game over is disabled, instead caps stress at 100 (Student stressTick function)
 
@@ -341,3 +399,4 @@ x = Game()
 ##When Game is over, instead of closing the Gui right away, tell the player their stats
 ##Going to need a "pack up" function which returns a list of strings
 #   These lists will get passed to functions in script.py in order to fill out things like the report card
+##Eventually, the subwindows might need their own initialization functions since they might be different sizes and stuff
