@@ -15,19 +15,21 @@ import courseInfo
 import calculations as calc
 
 class Game:
+
     def __init__(self):
 
         self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
         self.student = Student()
         self.clock = Clock(self.processTick)
         self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState)
-        self.course1 = Course(courseInfo.mechOne())
+        self.course1 = Course(courseInfo.mechOne()) #Course.getMechOne()
 
         self.gui.ready()               #Launches gui after everything else has been processed
 
     def processTick(self, day, hour):  #Main method: Processes all functions that need to update every hour/tick
         self.student.expTick()
         self.student.stressTick()
+        self.student.energyTick()
         self.gui.updateHUD(day, hour, self.student)
         if self.student.isTooStressed:
             self.gui.gameOver()
@@ -72,7 +74,7 @@ class GuiFormatter:
         self.app.registerEvent(self.clock.runClock)
 
         #Prompt user for their name, passes name to student
-        #self.student.name = self.getStudentName()           #BLANKED OUT FOR EASIER TESTING
+        self.student.name = self.getStudentName()
 
     #GUI formatting and initialization functions
 
@@ -133,6 +135,21 @@ class GuiFormatter:
         #self.app.setSize(400,600)
         self.app.setLocation(100, 100)
         self.app.stopSubWindow()
+
+    def energyLevelAlerts(self):
+        if self.student.energy <= 60 and Student.energyFlag1:
+            Student.energyFlag1 = False
+            self.app.warningBox("Check Energy Level", "You're getting tired...")
+        if self.student.energy <= 35 and Student.energyFlag2:
+            Student.energyFlag2 = False
+            self.app.warningBox("Check Energy Level", "You're like... really tired...")
+        if self.student.energy <= 10 and Student.energyFlag3:
+            Student.energyFlag3 = False
+            self.app.warningBox("Check Energy Level", "Yo go to sleep")
+        if self.student.energy > 65 and not Student.energyFlag1:
+            Student.energyFlag1 = True
+            Student.energyFlag2 = True
+            Student.energyFlag3 = True
 
     #Button functions
 
@@ -208,6 +225,7 @@ class GuiFormatter:
         if student.exp == 0:
             self.app.setLabel("expLabel", "Experience (Level " + str(student.expLevel) + ")")
         self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[day % 7]))
+        #self.energyLevelAlerts()
 
     def getStudentName(self):                        #Prompts player to enter their name, passes it to student
         self.app.setLocation(650, 100)
@@ -284,6 +302,9 @@ class Clock:
 class Student:
     stressBaseRate = 1.5    #per hour
     expBaseRate = 5         #per hour
+    energyFlag1 = True
+    energyFlag2 = True
+    energyFlag3 = True
 
     def __init__(self):
 
@@ -317,16 +338,29 @@ class Student:
             self.stress -= 0.25*self.getStressRate()
         if self.stress < 0:
             self.stress = 0
-        if self.stress >=100:
+        if self.stress >= 100:
             #self.isTooStressed = True
             self.stress = 100
 
     def expTick(self):
         if self.studentState['studying']:
             self.exp += self.getExpRate()
-        if self.exp >= 100:
-            self.exp = 0
+        if self.exp > 100:
+            self.exp -= 100
             self.expLevel += 1
+
+    def energyTick(self):
+        self.energy -= 1.5
+        if self.studentState['studying']:
+            self.energy -= 1
+        if self.studentState['relaxing']:
+            self.energy += 1
+        if self.studentState['sleeping']:
+            self.energy += 5
+        if self.energy > 100:
+            self.energy = 100
+        if self.energy < 0:
+            self.energy = 0
 
     def gatherStudentInfo(self):
         nm = self.name
@@ -342,9 +376,13 @@ class Student:
 class Course:
     semesterLength = 60
 
-    def __init__(self, classFunction):
+    '''
+    @staticmethod
+    def getMechOne():
+        return Course(courseInfo.mechOne())
+    '''
 
-        cls = classFunction
+    def __init__(self, cls):
 
         self.meetingDays = cls[0]
         self.startTime = cls[1]
@@ -352,7 +390,7 @@ class Course:
         self.difficulty = cls[3]
         self.importantDates = cls[4]
 
-
+        #Course should keep track of the grade for itself
 
 class SaveState:          #TODO: Nothing in this class works yet, do not call or interact with
     def __init__(self):
@@ -375,6 +413,7 @@ x = Game()
 #   Tick rate for exp and stress is too fast (Student __init__ function)
 #   Reading in name is disabled (GuiFormatter __init__ function)
 #   Game over is disabled, instead caps stress at 100 (Student stressTick function)
+#   energy alerts disabled (GuiFormatter updateHUD function)
 
 
 #TODO:
