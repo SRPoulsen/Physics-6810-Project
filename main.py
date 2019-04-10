@@ -18,11 +18,13 @@ class Game:
 
     def __init__(self):
 
-        self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
         self.student = Student()
         self.clock = Clock(self.processTick)
-        self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState)
-        self.course1 = Course(courseInfo.mechOne()) #Course.getMechOne()
+        self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState, self.gatherGrades)
+        self.course1 = Course(courseInfo.mechOne(), self.clock) #Course.getMechOne()
+
+        self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
+        self.turnedInHw = False        #Prevents processTick from turning in too much homework
 
         self.gui.ready()               #Launches gui after everything else has been processed
 
@@ -31,8 +33,18 @@ class Game:
         self.student.stressTick()
         self.student.energyTick()
         self.gui.updateHUD(day, hour, self.student)
+
+        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course1.hwDueDate and not self.turnedInHw:
+            self.course1.turnInHomework()
+            self.turnedInHw = True
+        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) != self.course1.hwDueDate:
+            self.turnedInHw = False
         if self.student.isTooStressed:
             self.gui.gameOver()
+
+    def gatherGrades(self):
+        grade = self.course1.getGrade()
+        print(grade)
 
     def gatherGameState(self):
         studentInfo = self.student.gatherStudentInfo()
@@ -50,14 +62,15 @@ class GuiFormatter:
     timeGroup = ['Play', 'Pause']
     actionGroup = ['Study', 'Relax', 'Sleep']
 
-    def __init__(self, clk, ss, gi):
+    def __init__(self, clk, ss, gi, gg):
         if GuiFormatter.created:            #Only allows one GUI to be created
             raise Exception('Instance already exists')
 
         GuiFormatter.created = True          #There has now been a created GUI
         self.clock = clk                     #Save the instance of the clock
         self.student = ss                    #Save the instance of the student
-        self.gatherInfo = gi
+        self.gatherInfo = gi                 #Trigger "gatherGameState" in Game
+        self.getGrades = gg                  #Trigger "gatherGrades" in Game
 
         #Calls on functions (below) to create and format the gui, as well as subWindows
         self.createAndFormatGui()
@@ -74,9 +87,9 @@ class GuiFormatter:
         self.app.registerEvent(self.clock.runClock)
 
         #Prompt user for their name, passes name to student
-        self.student.name = self.getStudentName()
+        #self.student.name = self.getStudentName()
 
-    #GUI formatting and initialization functions
+    # GUI formatting and initialization functions #
 
     def createAndFormatGui(self):              #Creates and formats the main gui
         self.app = gui("Control Window")
@@ -146,12 +159,12 @@ class GuiFormatter:
         if self.student.energy <= 10 and Student.energyFlag3:
             Student.energyFlag3 = False
             self.app.warningBox("Check Energy Level", "Yo go to sleep")
-        if self.student.energy > 65 and not Student.energyFlag1:
+        if self.student.energy > 70 and not Student.energyFlag1:
             Student.energyFlag1 = True
             Student.energyFlag2 = True
             Student.energyFlag3 = True
 
-    #Button functions
+    # Button functions #
 
     def playButton(self):                      #When the "Play" button is pressed, start the clock
         self.app.setLabel("PauseLabel", " ")
@@ -194,9 +207,10 @@ class GuiFormatter:
         self.app.setPollTime(self.clock.clockSpeed)
 
     def gradesButton(self):                    #Open "carmen" subwindow
-        self.app.destroySubWindow("Carmen")
+        '''self.app.destroySubWindow("Carmen")
         self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
-        self.app.showSubWindow("Carmen", hide = True)
+        self.app.showSubWindow("Carmen", hide = True)'''
+        self.getGrades()
 
     def reportCardButton(self):                #Open "Report Card" subwindow
         self.app.destroySubWindow("Report Card")
@@ -206,7 +220,7 @@ class GuiFormatter:
     def helpButton(self):                      #Open "Help" subwindow
         self.app.showSubWindow("Help", hide = True)
 
-    #General functions
+    # General functions #
 
     def changeActiveButton(self, activeBtn, group):  #Turns the active button green, changes all others in group to black
         for btn in group:
@@ -346,7 +360,7 @@ class Student:
         if self.studentState['studying']:
             self.exp += self.getExpRate()
         if self.exp > 100:
-            self.exp -= 100
+            self.exp = 0
             self.expLevel += 1
 
     def energyTick(self):
@@ -382,15 +396,29 @@ class Course:
         return Course(courseInfo.mechOne())
     '''
 
-    def __init__(self, cls):
+    def __init__(self, cls, clk):
 
+        self.clock = clk
         self.meetingDays = cls[0]
         self.startTime = cls[1]
         self.endTime = cls[2]
         self.difficulty = cls[3]
         self.importantDates = cls[4]
+        self.hwDueDate = cls[5]
+        self.grades = []
 
         #Course should keep track of the grade for itself
+
+    def turnInHomework(self):
+        self.grades.append([8,10])
+
+    def getGrade(self):
+        if len(self.grades) == 0:
+            return "No Grades Yet"
+        else:
+            return self.grades
+            #calc.calculateGrade(self.grades)
+
 
 class SaveState:          #TODO: Nothing in this class works yet, do not call or interact with
     def __init__(self):
@@ -411,9 +439,10 @@ x = Game()
 #Testing Notes:
 #   Fast speed set to 50 instead of 250 (Clock speedF function)
 #   Tick rate for exp and stress is too fast (Student __init__ function)
-#   Reading in name is disabled (GuiFormatter __init__ function)
+#   Name Entry Disabled (GuiFormatter __init__ function)
 #   Game over is disabled, instead caps stress at 100 (Student stressTick function)
 #   energy alerts disabled (GuiFormatter updateHUD function)
+#   Grades button functionality changed (GuiFormatter gradesButton function)
 
 
 #TODO:
@@ -439,3 +468,4 @@ x = Game()
 ##Going to need a "pack up" function which returns a list of strings
 #   These lists will get passed to functions in script.py in order to fill out things like the report card
 ##Eventually, the subwindows might need their own initialization functions since they might be different sizes and stuff
+##Make hwDueDate in courseInfo.py random

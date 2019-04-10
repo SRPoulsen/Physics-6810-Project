@@ -8,6 +8,7 @@
 # class to fill the information out when creating an instance of course.     #
 #                                                                            #
 ##############################################################################
+
 import calculations as calc
 
 def mechOne():
@@ -16,7 +17,8 @@ def mechOne():
     endTime = startTime + 1
     difficulty = 1
     importantDates = [30, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Thursday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def emOne():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -24,7 +26,8 @@ def emOne():
     endTime = startTime + 1
     difficulty = 1
     importantDates = [30, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Thursday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def labOne():
     meetingDays = ['Monday', 'Wednesday', 'Friday']
@@ -32,8 +35,9 @@ def labOne():
     endTime = startTime + 3
     difficulty = 2
     importantDates = [20, 40, 60]
+    hwDueDate = 'Friday'
 
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def quantum():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -41,7 +45,8 @@ def quantum():
     endTime = startTime + 1
     difficulty = 2
     importantDates = [30, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Thursday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def mechTwo():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -49,7 +54,8 @@ def mechTwo():
     endTime = startTime + 1
     difficulty = 3
     importantDates = [30, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Thursday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def emTwo():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -57,7 +63,8 @@ def emTwo():
     endTime = startTime + 1
     difficulty = 3
     importantDates = [30, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Thursday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def seniorLab():
     meetingDays = ['Monday', 'Wednesday', 'Friday']
@@ -65,7 +72,8 @@ def seniorLab():
     endTime = startTime + 3
     difficulty = 4
     importantDates = [20, 40, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Friday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def statMech():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -73,4 +81,5 @@ def statMech():
     endTime = startTime + 1
     difficulty = 4
     importantDates = [30, 60]
-    return [meetingDays, startTime, endTime, difficulty, importantDates]
+    hwDueDate = 'Thursday'
+    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
