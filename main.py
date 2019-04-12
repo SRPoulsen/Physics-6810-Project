@@ -15,9 +15,10 @@ import courseInfo
 import calculations as calc
 
 class Game:
-
-    CLASS_LIST = [courseInfo.mechOne(), courseInfo.emOne(), courseInfo.labOne(), courseInfo.quantum(), \
+    started = False
+    COURSE_LIST = [courseInfo.mechOne(), courseInfo.emOne(), courseInfo.labOne(), courseInfo.quantum(), \
                   courseInfo.mechTwo(), courseInfo.emTwo(), courseInfo.seniorLab(), courseInfo.statMech()]
+    FINAL_GRADES = []
 
     def __init__(self):
 
@@ -40,9 +41,14 @@ class Game:
 
         # If it's the beginning of a new semester, change the course you're in #
         if Clock.newSemester and self.clock.semester <= 8:
-            self.course = Course(Game.CLASS_LIST[self.clock.semester - 1], self.clock, self.student)
+            if Game.started:
+                Game.FINAL_GRADES.append(self.course.getGrade())
+                print('\nFinal Grades:' + str(Game.FINAL_GRADES))
+            self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
             print(script.newCourseIntro(self.course))
             Clock.newSemester = False
+
+        Game.started = True               #Confirms that the game has started and a course has been created
 
         # Turn in homework every week #
         if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
@@ -55,10 +61,13 @@ class Game:
         if self.student.isTooStressed:
             self.gui.gameOver()
 
+        # If the student makes it to the last semester #
+        if self.clock.semester > 8 and Clock.newSemester:
+            self.gui.gameWin()
+
     def gatherGrades(self):
         grade = self.course.getGrade()
         print(grade)
-        print(self.course.courseName)
 
     def gatherGameState(self):
         studentInfo = self.student.gatherStudentInfo()
@@ -224,7 +233,10 @@ class GuiFormatter:
         '''self.app.destroySubWindow("Carmen")
         self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
         self.app.showSubWindow("Carmen", hide = True)'''
-        self.getGrades()
+        if Game.started:
+            self.getGrades()
+        else:
+            pass
 
     def reportCardButton(self):                #Open "Report Card" subwindow
         self.app.destroySubWindow("Report Card")
@@ -273,6 +285,10 @@ class GuiFormatter:
         self.app.warningBox("Game Over", "Sorry! You Lost.")
         self.app.stop()
 
+    def gameWin(self):
+        self.app.warningBox("You Win", "Congratulations! You've won the game!")
+        self.app.stop()
+
 
 class Clock:
     WEEK_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -285,7 +301,6 @@ class Clock:
         self.clockIsRunning = False    #Start with the clock paused
         self.clockSpeed = 1000         #1000 ms delay on clock (1 s)
         self.action = act              #Passes in the action that should be performed every loop of runClock
-        self.dateUnlocked = True
 
     def startClock(self):          #Changes the status to "clock is running"
         if not self.clockIsRunning:             #Makes sure the clock wasn't already running
@@ -294,17 +309,17 @@ class Clock:
     def stopClock(self):           #Changes the status to "clock isn't running"
         self.clockIsRunning = False
 
-    def runClock(self):            #action = processTick in Game class
-        if self.clockIsRunning and self.dateUnlocked:       #Makes sure the clock is running and the date is unlocked
-            self.clockHour += 1                             #Adds one hour to the clock
+    def runClock(self):
+        if self.clockIsRunning:                    #Makes sure the clock is running and the date is unlocked
+            self.clockHour += 1                    #Adds one hour to the clock
             if self.clockHour >= 24:
                 self.clockHour -= 24
                 self.clockDay += 1
-            if self.clockDay >= 61:
+            if self.clockDay >= Course.semesterLength + 1:
                 self.clockDay = 0
                 self.semester += 1
                 Clock.newSemester = True
-            self.action(self.clockDay, self.clockHour)
+            self.action(self.clockDay, self.clockHour)   #action = processTick in Game class
 
     def speedS(self):              #Slowest speed (1 hour per second)
         self.clockSpeed = 1000
@@ -407,7 +422,7 @@ class Student:
 
 
 class Course:
-    semesterLength = 60
+    semesterLength = 20
 
     def __init__(self, cls, clk, stu):
 
@@ -425,14 +440,14 @@ class Course:
         #Course should keep track of the grade for itself
 
     def turnInHomework(self):
-        self.grades.append(calc.homeworkGrade())
+        self.grades.append(calc.homeworkGrade(self.student))
 
     def getGrade(self):
         if len(self.grades) == 0:
             return "No Grades Yet"
         else:
-            return self.grades
-            #calc.calculateGrade(self.grades)
+            print(self.grades)
+            return calc.calculateGrade(self.grades)
 
 
 class SaveState:          #TODO: Nothing in this class works yet, do not call or interact with
@@ -459,6 +474,7 @@ x = Game()
 #   energy alerts disabled (GuiFormatter updateHUD function)
 #   Grades button functionality changed (GuiFormatter gradesButton function)
 #   Return all the currect grades, not the total grade (Course getGrade function)
+#   Semester length is shorter (Course variable)
 
 
 #TODO:

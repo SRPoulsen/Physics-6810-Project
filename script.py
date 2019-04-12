@@ -29,6 +29,9 @@ def carmen(expLvl):
     return message
 
 def newCourseIntro(course):
-    message = "Welcome to " + str(course.courseName) + "!"
+    message = "\nWelcome to " + str(course.courseName) + "!"
+    message += "\nYour class will be held at " + str(course.startTime) + " AM on " + str(course.meetingDays)
+    message += "\nHomework is due every " + str(course.hwDueDate)
+    message += "\nYou have tests on day " + str(course.importantDates)
 
     return message

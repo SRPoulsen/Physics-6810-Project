@@ -12,7 +12,7 @@ import numpy as np
 import random
 import math
 
-def scheduleClass():           #Randomly assigns your class te be at 8 am (25%), 9 am (50%), or 10 am (25%)
+def scheduleClassTime():           #Randomly assigns your class to be at 8 am (25%), 9 am (50%), or 10 am (25%)
     randNum = random.random()
     if randNum < 0.25:
         return 8
@@ -21,18 +21,32 @@ def scheduleClass():           #Randomly assigns your class te be at 8 am (25%),
     if randNum >= 0.75:
         return 10
 
-def homeworkGrade():
-    return [10,10]
+def scheduleHwDate(meetingDays):
+    return random.choice(meetingDays)
+
+def homeworkGrade(student):
+    center = 8
+    std = 2
+    grade = round(np.random.normal(center, std), 2)
+    if grade > 10:
+        grade = 10
+
+    return [grade, 10]
 
 def testGrade():
-    pass
+    center = 40
+    std = 5
+    grade = round(np.random.normal(center, std), 2)
+    if grade > 50:
+        grade = 50
+
+    return [grade, 50]
 
 def calculateGrade(gradesList):    #Takes in a list of lists, calculates the grade the student currently has
     studentPoints = 0
     totalPoints = 0
-
     for i in range(len(gradesList)):
         studentPoints += gradesList[i][0]
         totalPoints += gradesList[i][1]
 
-    return float(studentPoints) / float(totalPoints)
+    return round((float(studentPoints) / float(totalPoints)) * 100, 2)
