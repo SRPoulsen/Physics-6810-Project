@@ -22,7 +22,7 @@ def scheduleClass():           #Randomly assigns your class te be at 8 am (25%),
         return 10
 
 def homeworkGrade():
-    pass
+    return [10,10]
 
 def testGrade():
     pass

@@ -27,3 +27,8 @@ def helpWindow():
 def carmen(expLvl):
     message = "The students experience level is " + str(expLvl)
     return message
+
+def newCourseIntro(course):
+    message = "Welcome to " + str(course.courseName) + "!"
+
+    return message

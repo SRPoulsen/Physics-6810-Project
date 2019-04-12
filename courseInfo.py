@@ -12,24 +12,27 @@
 import calculations as calc
 
 def mechOne():
+    courseName = 'Mechanics One'
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 1
     difficulty = 1
     importantDates = [30, 60]
     hwDueDate = 'Thursday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def emOne():
+    courseName = 'E&M One'
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 1
     difficulty = 1
     importantDates = [30, 60]
     hwDueDate = 'Thursday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def labOne():
+    courseName = 'Intro Lab'
     meetingDays = ['Monday', 'Wednesday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 3
@@ -37,49 +40,54 @@ def labOne():
     importantDates = [20, 40, 60]
     hwDueDate = 'Friday'
 
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def quantum():
+    courseName = 'Quantum Mechanics'
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 1
     difficulty = 2
     importantDates = [30, 60]
     hwDueDate = 'Thursday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def mechTwo():
+    courseName = 'Mechanics Two'
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 1
     difficulty = 3
     importantDates = [30, 60]
     hwDueDate = 'Thursday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def emTwo():
+    courseName = 'E&M Two'
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 1
     difficulty = 3
     importantDates = [30, 60]
     hwDueDate = 'Thursday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def seniorLab():
+    courseName = 'Senior Lab'
     meetingDays = ['Monday', 'Wednesday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 3
     difficulty = 4
     importantDates = [20, 40, 60]
     hwDueDate = 'Friday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
 
 def statMech():
+    courseName = 'Statistical Mechanics'
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClass()
     endTime = startTime + 1
     difficulty = 4
     importantDates = [30, 60]
     hwDueDate = 'Thursday'
-    return [meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
+    return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]

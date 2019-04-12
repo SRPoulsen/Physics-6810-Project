@@ -16,12 +16,14 @@ import calculations as calc
 
 class Game:
 
+    CLASS_LIST = [courseInfo.mechOne(), courseInfo.emOne(), courseInfo.labOne(), courseInfo.quantum(), \
+                  courseInfo.mechTwo(), courseInfo.emTwo(), courseInfo.seniorLab(), courseInfo.statMech()]
+
     def __init__(self):
 
         self.student = Student()
         self.clock = Clock(self.processTick)
         self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState, self.gatherGrades)
-        self.course1 = Course(courseInfo.mechOne(), self.clock) #Course.getMechOne()
 
         self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
         self.turnedInHw = False        #Prevents processTick from turning in too much homework
@@ -29,22 +31,34 @@ class Game:
         self.gui.ready()               #Launches gui after everything else has been processed
 
     def processTick(self, day, hour):  #Main method: Processes all functions that need to update every hour/tick
+
+        # Recalculate every hour and update the HUD #
         self.student.expTick()
         self.student.stressTick()
         self.student.energyTick()
         self.gui.updateHUD(day, hour, self.student)
 
-        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course1.hwDueDate and not self.turnedInHw:
-            self.course1.turnInHomework()
+        # If it's the beginning of a new semester, change the course you're in #
+        if Clock.newSemester and self.clock.semester <= 8:
+            self.course = Course(Game.CLASS_LIST[self.clock.semester - 1], self.clock, self.student)
+            print(script.newCourseIntro(self.course))
+            Clock.newSemester = False
+
+        # Turn in homework every week #
+        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
+            self.course.turnInHomework()
             self.turnedInHw = True
-        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) != self.course1.hwDueDate:
+        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) != self.course.hwDueDate:
             self.turnedInHw = False
+
+        # If the student is too stressed, end the game #
         if self.student.isTooStressed:
             self.gui.gameOver()
 
     def gatherGrades(self):
-        grade = self.course1.getGrade()
+        grade = self.course.getGrade()
         print(grade)
+        print(self.course.courseName)
 
     def gatherGameState(self):
         studentInfo = self.student.gatherStudentInfo()
@@ -262,6 +276,7 @@ class GuiFormatter:
 
 class Clock:
     WEEK_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    newSemester = True
 
     def __init__(self, act):
         self.clockDay = 0
@@ -285,6 +300,10 @@ class Clock:
             if self.clockHour >= 24:
                 self.clockHour -= 24
                 self.clockDay += 1
+            if self.clockDay >= 61:
+                self.clockDay = 0
+                self.semester += 1
+                Clock.newSemester = True
             self.action(self.clockDay, self.clockHour)
 
     def speedS(self):              #Slowest speed (1 hour per second)
@@ -316,7 +335,7 @@ class Clock:
 class Student:
     stressBaseRate = 1.5    #per hour
     expBaseRate = 5         #per hour
-    energyFlag1 = True
+    energyFlag1 = True      #Used to prevent GuiFormatter from creating too many warnings
     energyFlag2 = True
     energyFlag3 = True
 
@@ -390,27 +409,23 @@ class Student:
 class Course:
     semesterLength = 60
 
-    '''
-    @staticmethod
-    def getMechOne():
-        return Course(courseInfo.mechOne())
-    '''
-
-    def __init__(self, cls, clk):
+    def __init__(self, cls, clk, stu):
 
         self.clock = clk
-        self.meetingDays = cls[0]
-        self.startTime = cls[1]
-        self.endTime = cls[2]
-        self.difficulty = cls[3]
-        self.importantDates = cls[4]
-        self.hwDueDate = cls[5]
+        self.student = stu
+        self.courseName = cls[0]
+        self.meetingDays = cls[1]
+        self.startTime = cls[2]
+        self.endTime = cls[3]
+        self.difficulty = cls[4]
+        self.importantDates = cls[5]
+        self.hwDueDate = cls[6]
         self.grades = []
 
         #Course should keep track of the grade for itself
 
     def turnInHomework(self):
-        self.grades.append([8,10])
+        self.grades.append(calc.homeworkGrade())
 
     def getGrade(self):
         if len(self.grades) == 0:
@@ -443,6 +458,7 @@ x = Game()
 #   Game over is disabled, instead caps stress at 100 (Student stressTick function)
 #   energy alerts disabled (GuiFormatter updateHUD function)
 #   Grades button functionality changed (GuiFormatter gradesButton function)
+#   Return all the currect grades, not the total grade (Course getGrade function)
 
 
 #TODO:
