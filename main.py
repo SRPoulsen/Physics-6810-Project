@@ -41,29 +41,36 @@ class Game:
 
         # If it's the beginning of a new semester, change the course you're in #
         if Clock.newSemester and self.clock.semester <= 8:
-            if Game.started:
-                Game.FINAL_GRADES.append(self.course.getGrade())
-                print('\nFinal Grades:' + str(Game.FINAL_GRADES))
-            self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
-            print(script.newCourseIntro(self.course))
-            Clock.newSemester = False
+            self.startNewSemester()
 
-        Game.started = True               #Confirms that the game has started and a course has been created
+        # Confirms that the game has started and a course has been created #
+        Game.started = True
 
         # Turn in homework every week #
-        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
-            self.course.turnInHomework()
-            self.turnedInHw = True
-        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) != self.course.hwDueDate:
-            self.turnedInHw = False
+        self.turnInHomework()
 
         # If the student is too stressed, end the game #
         if self.student.isTooStressed:
             self.gui.gameOver()
 
-        # If the student makes it to the last semester #
+        # If the student makes it to the last semester, end the game #
         if self.clock.semester > 8 and Clock.newSemester:
             self.gui.gameWin()
+
+    def startNewSemester(self):
+        if Game.started:
+            Game.FINAL_GRADES.append(self.course.getGrade())
+            print('\nFinal Grades:' + str(Game.FINAL_GRADES))
+        self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
+        print(script.newCourseIntro(self.course))
+        Clock.newSemester = False
+
+    def turnInHomework(self):
+        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
+            self.course.addHomeworkGrade()
+            self.turnedInHw = True
+        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) != self.course.hwDueDate:
+            self.turnedInHw = False
 
     def gatherGrades(self):
         grade = self.course.getGrade()
@@ -136,32 +143,36 @@ class GuiFormatter:
 
     def createGuiButtons(self):                #Creates all the buttons for gui
         self.app.setSticky("nsew")
-        self.app.addButton("Study", self.studyButton, 5, 0)
-        self.app.addButton("Relax", self.relaxButton, 5, 1)
-        self.app.addButton("Sleep", self.sleepButton, 5, 2)
+        self.app.addButton("Study", self.studyButton, 6, 0)
+        self.app.addButton("Relax", self.relaxButton, 6, 1)
+        self.app.addButton("Sleep", self.sleepButton, 6, 2)
         self.app.setButtonFg("Sleep", "Green")
-        self.app.addButton("Play", self.playButton, 6, 0)
-        self.app.addButton("Pause", self.pauseButton, 6, 1)
-        self.app.addButton("Save", self.saveButton, 6, 2)
-        self.app.addButton("Slow", self.slowButton, 7, 0)
-        self.app.addButton("Medium", self.medButton, 7, 1)
-        self.app.addButton("Fast", self.fastButton, 7, 2)
+        self.app.addButton("Play", self.playButton, 7, 0)
+        self.app.addButton("Pause", self.pauseButton, 7, 1)
+        self.app.addButton("Save", self.saveButton, 7, 2)
+        self.app.addButton("Slow", self.slowButton, 8, 0)
+        self.app.addButton("Medium", self.medButton, 8, 1)
+        self.app.addButton("Fast", self.fastButton, 8, 2)
         self.app.setButtonFg("Slow", "Green")
-        self.app.addButton("Grades", self.gradesButton, 8, 0)
-        self.app.addButton("Report Card", self.reportCardButton, 8, 1)
-        self.app.addButton("Help", self.helpButton, 8, 2)
+        self.app.addButton("Grades", self.gradesButton, 9, 0)
+        self.app.addButton("Report Card", self.reportCardButton, 9, 1)
+        self.app.addButton("Help", self.helpButton, 9, 2)
 
     def addSeperators(self):
         self.app.addHorizontalSeparator(0,0,3, colour="Black")
-        self.app.addHorizontalSeparator(4,0,3, colour="Black")
+        self.app.addHorizontalSeparator(5,0,3, colour="Black")
 
     def createStatusIndicators(self):          #Creates the meters and labels that tell the players their stats on gui
         self.app.setSticky("ew")
         self.app.addLabel("expLabel", "Experience (Level 1)", 2, 0, 1)
-        self.app.addLabel("strLabel", "Stress", 3, 0, 1)
+        self.app.addLabel("engLabel", "Energy", 3, 0, 1)
+        self.app.addLabel("strLabel", "Stress", 4, 0, 1)
         self.app.addMeter("Experience", 2, 1, 2)
         self.app.setMeterFill("Experience", "Green")
-        self.app.addMeter("Stress", 3, 1, 2)
+        self.app.addMeter("Energy", 3, 1, 2)
+        self.app.setMeterFill("Energy", "MediumBlue")
+        self.app.setMeter("Energy", 100)
+        self.app.addMeter("Stress", 4, 1, 2)
         self.app.setMeterFill("Stress", "Red")
 
     def initializeSubWindow(self, label, text):    #Creates a subWindow then immediatly hides it
@@ -171,21 +182,6 @@ class GuiFormatter:
         #self.app.setSize(400,600)
         self.app.setLocation(100, 100)
         self.app.stopSubWindow()
-
-    def energyLevelAlerts(self):
-        if self.student.energy <= 60 and Student.energyFlag1:
-            Student.energyFlag1 = False
-            self.app.warningBox("Check Energy Level", "You're getting tired...")
-        if self.student.energy <= 35 and Student.energyFlag2:
-            Student.energyFlag2 = False
-            self.app.warningBox("Check Energy Level", "You're like... really tired...")
-        if self.student.energy <= 10 and Student.energyFlag3:
-            Student.energyFlag3 = False
-            self.app.warningBox("Check Energy Level", "Yo go to sleep")
-        if self.student.energy > 70 and not Student.energyFlag1:
-            Student.energyFlag1 = True
-            Student.energyFlag2 = True
-            Student.energyFlag3 = True
 
     # Button functions #
 
@@ -262,10 +258,10 @@ class GuiFormatter:
         self.app.setLabel("dateLabel", "Day: " + str(day) + str(self.clock.militaryToAmPm(hour)))
         self.app.setMeter("Experience", student.exp)
         self.app.setMeter("Stress", student.stress)
+        self.app.setMeter("Energy", student.energy)
         if student.exp == 0:
             self.app.setLabel("expLabel", "Experience (Level " + str(student.expLevel) + ")")
         self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[day % 7]))
-        #self.energyLevelAlerts()
 
     def getStudentName(self):                        #Prompts player to enter their name, passes it to student
         self.app.setLocation(650, 100)
@@ -350,9 +346,7 @@ class Clock:
 class Student:
     stressBaseRate = 1.5    #per hour
     expBaseRate = 5         #per hour
-    energyFlag1 = True      #Used to prevent GuiFormatter from creating too many warnings
-    energyFlag2 = True
-    energyFlag3 = True
+    energyBaseRate = 1.5    #per hour
 
     def __init__(self):
 
@@ -361,8 +355,8 @@ class Student:
         self.expLevel = 1
         self.exp = 0
         self.stress = 0
-        self.isTooStressed = False
         self.energy = 100
+        self.isTooStressed = False
         self.friend = False
 
     def getExpRate(self):
@@ -376,6 +370,14 @@ class Student:
             return Student.stressBaseRate * 0.75
         else:
             return Student.stressBaseRate
+
+    def getEnergyRate(self):
+        if self.studentState['studying']:
+            return -Student.energyBaseRate
+        if self.studentState['relaxing']:
+            return Student.energyBaseRate
+        if self.studentState['sleeping']:
+            return Student.energyBaseRate * 5
 
     def stressTick(self):
         if self.studentState['studying']:
@@ -398,13 +400,7 @@ class Student:
             self.expLevel += 1
 
     def energyTick(self):
-        self.energy -= 1.5
-        if self.studentState['studying']:
-            self.energy -= 1
-        if self.studentState['relaxing']:
-            self.energy += 1
-        if self.studentState['sleeping']:
-            self.energy += 5
+        self.energy += self.getEnergyRate()
         if self.energy > 100:
             self.energy = 100
         if self.energy < 0:
@@ -437,9 +433,7 @@ class Course:
         self.hwDueDate = cls[6]
         self.grades = []
 
-        #Course should keep track of the grade for itself
-
-    def turnInHomework(self):
+    def addHomeworkGrade(self):
         self.grades.append(calc.homeworkGrade(self.student))
 
     def getGrade(self):
