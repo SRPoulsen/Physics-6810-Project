@@ -11,20 +11,23 @@
 
 from appJar import gui
 import script
-import courseInfo
+import courseInfo as cInfo
 import calculations as calc
+import os
+import json
 
 class Game:
     started = False
-    COURSE_LIST = [courseInfo.mechOne(), courseInfo.emOne(), courseInfo.labOne(), courseInfo.quantum(), \
-                  courseInfo.mechTwo(), courseInfo.emTwo(), courseInfo.seniorLab(), courseInfo.statMech()]
-    FINAL_GRADES = []
+    COURSE_LIST = [cInfo.mechOne(), cInfo.emOne(), cInfo.labOne(), cInfo.quantum(), \
+                   cInfo.mechTwo(), cInfo.emTwo(), cInfo.seniorLab(), cInfo.statMech()]  #The courses you take in order
+    FINAL_GRADES = {}     #Final grades from each class are stored here
 
     def __init__(self):
 
         self.student = Student()
         self.clock = Clock(self.processTick)
-        self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState, self.gatherGrades)
+        self.gui = GuiFormatter(self.clock, self.student, self.gatherGameState, self.loadGameState, self.gatherGrades)
+        self.saveState = SaveState()
 
         self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
         self.turnedInHw = False        #Prevents processTick from turning in too much homework
@@ -58,8 +61,8 @@ class Game:
             self.gui.gameWin()
 
     def startNewSemester(self):
-        if Game.started:
-            Game.FINAL_GRADES.append(self.course.getGrade())
+        if Game.started:          #Doesn't try and save grades when starting the first semester
+            Game.FINAL_GRADES[self.course.courseName] = self.course.getGrade()    #Save grades as hash {course : grade}
             print('\nFinal Grades:' + str(Game.FINAL_GRADES))
         self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
         print(script.newCourseIntro(self.course))
@@ -75,14 +78,58 @@ class Game:
     def gatherGrades(self):
         grade = self.course.getGrade()
         print(grade)
+        print(Game.FINAL_GRADES)
 
-    def gatherGameState(self):
-        studentInfo = self.student.gatherStudentInfo()
-        clockInfo = self.clock.gatherClockInfo()
-        self.gameState = [studentInfo, clockInfo]
-        print("Information Gathered")
-        print(self.gameState)
+    def gatherGameState(self, fileName):
 
+        # Make sure the game has started before letting the player save the game #
+        if Game.started:
+            studentInfo = self.student.gatherStudentInfo()
+            clockInfo = self.clock.gatherClockInfo()
+            courseInfo = self.course.gatherCourseInfo()
+            self.gameState = [studentInfo, clockInfo, courseInfo, Game.FINAL_GRADES]
+            print("Information Gathered")
+            print(self.gameState)
+            self.saveState.save(self.gameState, fileName)
+        else:
+            print("Game has not been started. Press 'play' to start the game.")
+
+    def loadGameState(self, fileName):
+        # Have saveState.load retrieve data from json file #
+        loadedData = self.saveState.load(fileName)
+
+        # Override current data with the newly loaded data #
+        self.loadStudentInfo(loadedData['student'])
+        self.loadClockInfo(loadedData['clock'])
+        self.loadCourseInfo(loadedData['course'])
+        Game.FINAL_GRADES = loadedData['FINAL_GRADES']
+
+        # Update the gui with the newly loaded data #
+        self.gui.updateHUDafterLoad(self.clock, self.student)
+
+    def loadStudentInfo(self, info):
+        self.student.name = info[0]
+        self.student.studentState = info[1]
+        self.student.expLevel = info[2]
+        self.student.exp = info[3]
+        self.student.stress = info[4]
+        self.student.energy = info[5]
+        self.student.friend = info[6]
+
+    def loadClockInfo(self, info):
+        self.clock.clockDay = info[0]
+        self.clock.clockHour = info[1]
+        self.clock.semester = info[2]
+
+    def loadCourseInfo(self, info):
+        self.courseName = info[0]
+        self.meetingDays = info[1]
+        self.startTime = info[2]
+        self.endTime = info[3]
+        self.difficulty = info[4]
+        self.importantDates = info[5]
+        self.hwDueDate = info[6]
+        self.grades = info[7]
 
 class GuiFormatter:
     created = False                             #There has never been a created GUI before
@@ -92,7 +139,7 @@ class GuiFormatter:
     timeGroup = ['Play', 'Pause']
     actionGroup = ['Study', 'Relax', 'Sleep']
 
-    def __init__(self, clk, ss, gi, gg):
+    def __init__(self, clk, ss, gi, lg, gg):
         if GuiFormatter.created:            #Only allows one GUI to be created
             raise Exception('Instance already exists')
 
@@ -100,6 +147,7 @@ class GuiFormatter:
         self.clock = clk                     #Save the instance of the clock
         self.student = ss                    #Save the instance of the student
         self.gatherInfo = gi                 #Trigger "gatherGameState" in Game
+        self.loadInfo = lg                   #Trigger "loadGameState" in Game
         self.getGrades = gg                  #Trigger "gatherGrades" in Game
 
         #Calls on functions (below) to create and format the gui, as well as subWindows
@@ -109,7 +157,6 @@ class GuiFormatter:
         self.createGuiButtons()
         self.addSeperators()
         self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
-        self.initializeSubWindow("Report Card", "This is a test of the report card")
         self.initializeSubWindow("Help", script.helpWindow())
 
         #Initialize the clock to run at "slow" speed, then begin looping through runClock
@@ -117,7 +164,7 @@ class GuiFormatter:
         self.app.registerEvent(self.clock.runClock)
 
         #Prompt user for their name, passes name to student
-        #self.student.name = self.getStudentName()
+        self.student.name = self.getStudentName()
 
     # GUI formatting and initialization functions #
 
@@ -155,7 +202,7 @@ class GuiFormatter:
         self.app.addButton("Fast", self.fastButton, 8, 2)
         self.app.setButtonFg("Slow", "Green")
         self.app.addButton("Grades", self.gradesButton, 9, 0)
-        self.app.addButton("Report Card", self.reportCardButton, 9, 1)
+        self.app.addButton("Load", self.loadButton, 9, 1)
         self.app.addButton("Help", self.helpButton, 9, 2)
 
     def addSeperators(self):
@@ -196,7 +243,8 @@ class GuiFormatter:
         self.clock.stopClock()
 
     def saveButton(self):
-        self.gatherInfo()
+        fileName = self.getSaveFileName()
+        self.gatherInfo(fileName)
 
     def studyButton(self):                     #Changes studying to true, changes relax/sleep to false
         self.changeActiveAction('studying')
@@ -234,10 +282,9 @@ class GuiFormatter:
         else:
             pass
 
-    def reportCardButton(self):                #Open "Report Card" subwindow
-        self.app.destroySubWindow("Report Card")
-        self.initializeSubWindow("Report Card", "This is a test of the report card")
-        self.app.showSubWindow("Report Card", hide = True)
+    def loadButton(self):                      #Trigger loading the game
+        nameAndPath = self.getLoadFileName()
+        self.loadInfo(nameAndPath)
 
     def helpButton(self):                      #Open "Help" subwindow
         self.app.showSubWindow("Help", hide = True)
@@ -263,6 +310,15 @@ class GuiFormatter:
             self.app.setLabel("expLabel", "Experience (Level " + str(student.expLevel) + ")")
         self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[day % 7]))
 
+    def updateHUDafterLoad(self, clock, student):
+        self.app.warningBox("Game Loaded", "The game has been successfully loaded.")
+        self.app.setLabel("dateLabel", "Day: " + str(clock.clockDay) + str(self.clock.militaryToAmPm(clock.clockHour)))
+        self.app.setLabel("DayOfWeek", str(Clock.WEEK_DAYS[clock.clockDay % 7]))
+        self.app.setLabel("expLabel", "Experience (Level " + str(student.expLevel) + ")")
+        self.app.setMeter("Experience", student.exp)
+        self.app.setMeter("Stress", student.stress)
+        self.app.setMeter("Energy", student.energy)
+
     def getStudentName(self):                        #Prompts player to enter their name, passes it to student
         self.app.setLocation(650, 100)
         name = self.app.stringBox("Welcome To OSU!", "Please Type Name Below")
@@ -271,8 +327,18 @@ class GuiFormatter:
             name = self.getStudentName()
         return name
 
-    def saveGame(self):                              #TODO: Exports a file that saves gamestate to be opened later
-        print(self.student.name)
+    def getSaveFileName(self):                        #Prompts player to enter their name, passes it to student
+        self.app.setLocation(650, 100)
+        fileName = self.app.stringBox("Preparing To Save Game", "Please type the name of your save file.")
+        if fileName == None or fileName.isspace() or len(fileName) == 0:
+            self.app.warningBox("Invalid Entry", "File was not saved.")
+            pass
+        return fileName
+
+    def getLoadFileName(self):
+        dir = str(os.path.dirname(os.path.abspath(__file__))) + "/save_files/"
+        nameAndPath = self.app.openBox(title= 'Choose File to Load', dirName = dir, fileTypes = [('text', '*.txt')])
+        return nameAndPath
 
     def ready(self):                                 #Launch the gui window
         self.app.go()
@@ -443,19 +509,48 @@ class Course:
             print(self.grades)
             return calc.calculateGrade(self.grades)
 
+    def gatherCourseInfo(self):
+        cn = self.courseName
+        md = self.meetingDays
+        st = self.startTime
+        et = self.endTime
+        df = self.difficulty
+        id = self.importantDates
+        hw = self.hwDueDate
+        gr = self.grades
 
-class SaveState:          #TODO: Nothing in this class works yet, do not call or interact with
+        return [cn, md, st, et, df, id, hw, gr]
+
+
+class SaveState:
+
     def __init__(self):
-        self.save = False
+        self.path = str(os.path.dirname(os.path.abspath(__file__))) + "/save_files/"
 
-    @staticmethod
-    def saveGame(gameState):
-        pass
+    def save(self, gameState, fileName):
+        # Create the full path to the save_files folder #
+        fileNameAndPath = self.path + str(fileName) + '.txt'
 
-    @staticmethod
-    def loadGame(gameState):
-        pass
+        # Save the gamestate as a dict, easier for json to read and dump #
+        saveinfo = {}
+        saveinfo['student'] = gameState[0]
+        saveinfo['clock'] = gameState[1]
+        saveinfo['course'] = gameState[2]
+        saveinfo['FINAL_GRADES'] = gameState[3]
 
+        # Create the json file and fill it #
+        with open(fileNameAndPath, 'w') as savefile:
+            json.dump(saveinfo, savefile)
+
+        savefile.close()
+
+    def load(self, fileName):
+
+        # Open the file and save it as 'loadedData' #
+        with open(fileName) as json_file:
+            loadedData = json.load(json_file)
+
+        return loadedData
 
 #Start the game
 x = Game()
@@ -467,18 +562,16 @@ x = Game()
 #   Game over is disabled, instead caps stress at 100 (Student stressTick function)
 #   energy alerts disabled (GuiFormatter updateHUD function)
 #   Grades button functionality changed (GuiFormatter gradesButton function)
-#   Return all the currect grades, not the total grade (Course getGrade function)
+#   Return all the current grades, not the total grade (Course getGrade function)
 #   Semester length is shorter (Course variable)
 
 
 #TODO:
 ##Add functionality to energy level (in student)
 #   Go from 100 to 75 over course of normal day (16 hours)
-#   Include popup warning when you haven't sleept in a long time (at 50?)
 #   below 50 increases stress, decreases exp gain
 #   below 25, increases stress, decreases exp gain further
-##Start on script
-#   Create Script file that can be called by GuiFormatter
+##Continue on script
 ##Overall improvement to layout
 #   Figure out the best layout for buttons
 #   Where will text be displayed?
@@ -495,3 +588,29 @@ x = Game()
 #   These lists will get passed to functions in script.py in order to fill out things like the report card
 ##Eventually, the subwindows might need their own initialization functions since they might be different sizes and stuff
 ##Make hwDueDate in courseInfo.py random
+
+##Important info that needs to be saved/loaded
+#   student
+#       Name
+#       studentState
+#       expLevel
+#       exp
+#       stress
+#       energy
+#       friend
+#   clock
+#       clockDay
+#       clockHour
+#       semester
+#       Clock.newSemester
+#   course
+#       courseName
+#       meetingDays
+#       startTime
+#       endTime
+#       difficulty
+#       importantDates
+#       hwDueDate
+#       grades
+#   game
+#       FINAL_GRADES
