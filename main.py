@@ -338,7 +338,11 @@ class GuiFormatter:
     def getLoadFileName(self):
         dir = str(os.path.dirname(os.path.abspath(__file__))) + "/save_files/"
         nameAndPath = self.app.openBox(title= 'Choose File to Load', dirName = dir, fileTypes = [('text', '*.txt')])
+        if not (dir in nameAndPath):
+             self.app.warningBox("Invalid Entry", "Only files from saved_files may be loaded. Please choose from starting directory.")
+             nameAndPath = self.getLoadFileName()
         return nameAndPath
+
 
     def ready(self):                                 #Launch the gui window
         self.app.go()
