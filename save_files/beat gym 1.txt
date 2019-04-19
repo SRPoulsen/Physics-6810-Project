@@ -1,0 +1,1 @@
+{"student": ["krisann", {"studying": false, "sleeping": false, "relaxing": true}, 3, 1.6666666666666665, 37.125, 98.5, false], "clock": [4, 9, 1], "course": ["Mechanics One", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], 9, 10, 1, [30, 60], "Tuesday", [[10, 10]]], "FINAL_GRADES": {}}

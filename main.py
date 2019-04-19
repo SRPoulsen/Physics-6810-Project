@@ -31,6 +31,8 @@ class Game:
 
         self.gameState = []            #Will store all important info about the game (date, name, grade, stress, exp...)
         self.turnedInHw = False        #Prevents processTick from turning in too much homework
+        self.tookTest = False
+        self.inClass = False
 
         self.gui.ready()               #Launches gui after everything else has been processed
 
@@ -49,8 +51,17 @@ class Game:
         # Confirms that the game has started and a course has been created #
         Game.started = True
 
-        # Turn in homework every week #
+        # See if current day of the week and time is during class #
+        self.checkIfInClass()
+
+        # Everytime class is held the difficulty increases #
+        if self.inClass:
+            self.course.increaseDifficulty()
+            print(self.course.difficulty)
+
+        # Turn in homework every week and take tests on important days #
         self.turnInHomework()
+        self.takeTest()
 
         # If the student is too stressed, end the game #
         if self.student.isTooStressed:
@@ -60,20 +71,36 @@ class Game:
         if self.clock.semester > 8 and Clock.newSemester:
             self.gui.gameWin()
 
+    def checkIfInClass(self):
+        if (str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) in self.course.meetingDays) and (self.clock.clockHour == self.course.startTime):
+            self.inClass = True
+        if (str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) not in self.course.meetingDays) or (self.clock.clockHour != self.course.startTime):
+            self.inClass = False
+
     def startNewSemester(self):
         if Game.started:          #Doesn't try and save grades when starting the first semester
             Game.FINAL_GRADES[self.course.courseName] = self.course.getGrade()    #Save grades as hash {course : grade}
             print('\nFinal Grades:' + str(Game.FINAL_GRADES))
         self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
+        self.student.expLevel = 1
+        self.student.exp = 0
+        self.gui.updateHUD(self.clock.clockDay, self.clock.clockHour, self.student)
         print(script.newCourseIntro(self.course))
         Clock.newSemester = False
 
     def turnInHomework(self):
-        if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
+        if self.inClass and str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
             self.course.addHomeworkGrade()
             self.turnedInHw = True
         if str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) != self.course.hwDueDate:
             self.turnedInHw = False
+
+    def takeTest(self):
+        if self.clock.clockDay in self.course.importantDates and self.inClass and not self.tookTest:
+            self.course.addTestGrade()
+            self.tookTest = True
+        if self.clock.clockDay not in self.course.importantDates:
+            self.tookTest = False
 
     def gatherGrades(self):
         grade = self.course.getGrade()
@@ -196,12 +223,12 @@ class GuiFormatter:
         self.app.setButtonFg("Sleep", "Green")
         self.app.addButton("Play", self.playButton, 7, 0)
         self.app.addButton("Pause", self.pauseButton, 7, 1)
-        self.app.addButton("Save", self.saveButton, 7, 2)
+        self.app.addButton("Grades", self.gradesButton, 7, 2)
         self.app.addButton("Slow", self.slowButton, 8, 0)
         self.app.addButton("Medium", self.medButton, 8, 1)
         self.app.addButton("Fast", self.fastButton, 8, 2)
         self.app.setButtonFg("Slow", "Green")
-        self.app.addButton("Grades", self.gradesButton, 9, 0)
+        self.app.addButton("Save", self.saveButton, 9, 0)
         self.app.addButton("Load", self.loadButton, 9, 1)
         self.app.addButton("Help", self.helpButton, 9, 2)
 
@@ -343,7 +370,6 @@ class GuiFormatter:
              nameAndPath = self.getLoadFileName()
         return nameAndPath
 
-
     def ready(self):                                 #Launch the gui window
         self.app.go()
 
@@ -414,9 +440,9 @@ class Clock:
 
 
 class Student:
-    stressBaseRate = 1.5    #per hour
-    expBaseRate = 5         #per hour
-    energyBaseRate = 1.5    #per hour
+    stressBaseRate = 0.5    #per hour
+    expBaseRate = 2.0       #per hour
+    energyBaseRate = 1.0    #per hour
 
     def __init__(self):
 
@@ -443,7 +469,7 @@ class Student:
 
     def getEnergyRate(self):
         if self.studentState['studying']:
-            return -Student.energyBaseRate
+            return -Student.energyBaseRate * 2
         if self.studentState['relaxing']:
             return Student.energyBaseRate
         if self.studentState['sleeping']:
@@ -453,13 +479,13 @@ class Student:
         if self.studentState['studying']:
             self.stress += self.getStressRate()
         if self.studentState['relaxing']:
-            self.stress -= self.getStressRate()
+            self.stress -= self.getStressRate() * 2
         if self.studentState['sleeping']:
             self.stress -= 0.25*self.getStressRate()
         if self.stress < 0:
             self.stress = 0
         if self.stress >= 100:
-            #self.isTooStressed = True
+            self.isTooStressed = True
             self.stress = 100
 
     def expTick(self):
@@ -488,7 +514,7 @@ class Student:
 
 
 class Course:
-    semesterLength = 20
+    semesterLength = 62
 
     def __init__(self, cls, clk, stu):
 
@@ -504,7 +530,10 @@ class Course:
         self.grades = []
 
     def addHomeworkGrade(self):
-        self.grades.append(calc.homeworkGrade(self.student))
+        self.grades.append(calc.homeworkGrade(self.student, self.difficulty))
+
+    def addTestGrade(self):
+        self.grades.append(calc.testGrade(self.student, self.difficulty))
 
     def getGrade(self):
         if len(self.grades) == 0:
@@ -512,6 +541,9 @@ class Course:
         else:
             print(self.grades)
             return calc.calculateGrade(self.grades)
+
+    def increaseDifficulty(self):
+        self.difficulty += 0.25
 
     def gatherCourseInfo(self):
         cn = self.courseName
@@ -562,9 +594,6 @@ x = Game()
 #Testing Notes:
 #   Fast speed set to 50 instead of 250 (Clock speedF function)
 #   Tick rate for exp and stress is too fast (Student __init__ function)
-#   Name Entry Disabled (GuiFormatter __init__ function)
-#   Game over is disabled, instead caps stress at 100 (Student stressTick function)
-#   energy alerts disabled (GuiFormatter updateHUD function)
 #   Grades button functionality changed (GuiFormatter gradesButton function)
 #   Return all the current grades, not the total grade (Course getGrade function)
 #   Semester length is shorter (Course variable)
@@ -579,19 +608,12 @@ x = Game()
 ##Overall improvement to layout
 #   Figure out the best layout for buttons
 #   Where will text be displayed?
-#   Name entry box needs script and should be loaded on center of screen
-##Determine how to save and load the game
-#   need gameState dict which contains all important info (day, hour, exp, report card....)
 ##Stretch goal: Include functionality to allow player to create a weekly schedule
 #   pre-set actions for certain times and then let the program autorun their schedule
-##Create Calculations library which will handle all requests for probablilities and other advanced calculations
-#   consider moving getExpRate and getStressRate to math library
-##Create Course class
 ##When Game is over, instead of closing the Gui right away, tell the player their stats
 ##Going to need a "pack up" function which returns a list of strings
 #   These lists will get passed to functions in script.py in order to fill out things like the report card
 ##Eventually, the subwindows might need their own initialization functions since they might be different sizes and stuff
-##Make hwDueDate in courseInfo.py random
 
 ##Important info that needs to be saved/loaded
 #   student

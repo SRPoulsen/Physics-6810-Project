@@ -16,7 +16,7 @@ def mechOne():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 1
-    difficulty = 1
+    difficulty = 1.0
     importantDates = [30, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
@@ -26,7 +26,7 @@ def emOne():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 1
-    difficulty = 1
+    difficulty = 1.0
     importantDates = [30, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
@@ -36,7 +36,7 @@ def labOne():
     meetingDays = ['Monday', 'Wednesday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 3
-    difficulty = 2
+    difficulty = 2.0
     importantDates = [20, 40, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
 
@@ -47,7 +47,7 @@ def quantum():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 1
-    difficulty = 2
+    difficulty = 2.0
     importantDates = [30, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
@@ -57,7 +57,7 @@ def mechTwo():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 1
-    difficulty = 3
+    difficulty = 3.0
     importantDates = [30, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
@@ -67,7 +67,7 @@ def emTwo():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 1
-    difficulty = 3
+    difficulty = 3.0
     importantDates = [30, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
@@ -77,7 +77,7 @@ def seniorLab():
     meetingDays = ['Monday', 'Wednesday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 3
-    difficulty = 4
+    difficulty = 4.0
     importantDates = [20, 40, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]
@@ -87,7 +87,7 @@ def statMech():
     meetingDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     startTime = calc.scheduleClassTime()
     endTime = startTime + 1
-    difficulty = 4
+    difficulty = 4.0
     importantDates = [30, 60]
     hwDueDate = calc.scheduleHwDate(meetingDays)
     return [courseName, meetingDays, startTime, endTime, difficulty, importantDates, hwDueDate]

@@ -24,18 +24,18 @@ def scheduleClassTime():           #Randomly assigns your class to be at 8 am (2
 def scheduleHwDate(meetingDays):
     return random.choice(meetingDays)
 
-def homeworkGrade(student):
-    center = 8
-    std = 2
+def homeworkGrade(student, difficulty):
+    center = 10 + student.expLevel + (student.exp / 100) - difficulty
+    std = student.stress / 50
     grade = round(np.random.normal(center, std), 2)
     if grade > 10:
         grade = 10
 
     return [grade, 10]
 
-def testGrade():
-    center = 40
-    std = 5
+def testGrade(student, difficulty):
+    center = 40 + (((1.5 * student.expLevel + (student.exp / 100)) - difficulty) * 4)
+    std = student.stress / 8
     grade = round(np.random.normal(center, std), 2)
     if grade > 50:
         grade = 50
