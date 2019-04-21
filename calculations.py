@@ -25,7 +25,7 @@ def scheduleHwDate(meetingDays):
     return random.choice(meetingDays)
 
 def homeworkGrade(student, difficulty):
-    center = 10 + student.expLevel + (student.exp / 100) - difficulty
+    center = 9 + student.expLevel + (student.exp / 100) - difficulty
     std = student.stress / 50
     grade = round(np.random.normal(center, std), 2)
     if grade > 10:
@@ -45,8 +45,8 @@ def testGrade(student, difficulty):
 def calculateGrade(gradesList):    #Takes in a list of lists, calculates the grade the student currently has
     studentPoints = 0
     totalPoints = 0
-    for i in range(len(gradesList)):
-        studentPoints += gradesList[i][0]
-        totalPoints += gradesList[i][1]
+    for _, value in gradesList.items():
+        studentPoints += value[0]
+        totalPoints += value[1]
 
     return round((float(studentPoints) / float(totalPoints)) * 100, 2)

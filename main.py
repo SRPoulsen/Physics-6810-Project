@@ -116,7 +116,6 @@ class Game:
             courseInfo = self.course.gatherCourseInfo()
             self.gameState = [studentInfo, clockInfo, courseInfo, Game.FINAL_GRADES]
             print("Information Gathered")
-            print(self.gameState)
             self.saveState.save(self.gameState, fileName)
         else:
             print("Game has not been started. Press 'play' to start the game.")
@@ -130,6 +129,7 @@ class Game:
         self.loadClockInfo(loadedData['clock'])
         self.loadCourseInfo(loadedData['course'])
         Game.FINAL_GRADES = loadedData['FINAL_GRADES']
+        Game.started = True
 
         # Update the gui with the newly loaded data #
         self.gui.updateHUDafterLoad(self.clock, self.student)
@@ -147,16 +147,22 @@ class Game:
         self.clock.clockDay = info[0]
         self.clock.clockHour = info[1]
         self.clock.semester = info[2]
+        Clock.newSemester = info[3]
 
     def loadCourseInfo(self, info):
-        self.courseName = info[0]
-        self.meetingDays = info[1]
-        self.startTime = info[2]
-        self.endTime = info[3]
-        self.difficulty = info[4]
-        self.importantDates = info[5]
-        self.hwDueDate = info[6]
-        self.grades = info[7]
+        if not Game.started:
+            self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
+
+        self.course.courseName = info[0]
+        self.course.meetingDays = info[1]
+        self.course.startTime = info[2]
+        self.course.endTime = info[3]
+        self.course.difficulty = info[4]
+        self.course.importantDates = info[5]
+        self.course.hwDueDate = info[6]
+        self.course.grades = info[7]
+        self.course.hwNumber = info[8]
+        self.course.testNumber = info[9]
 
 class GuiFormatter:
     created = False                             #There has never been a created GUI before
@@ -183,7 +189,7 @@ class GuiFormatter:
         self.createStatusIndicators()
         self.createGuiButtons()
         self.addSeperators()
-        self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
+        self.initializeSubWindow("Grades", script.gradesWindow(self.student.expLevel))
         self.initializeSubWindow("Help", script.helpWindow())
 
         #Initialize the clock to run at "slow" speed, then begin looping through runClock
@@ -300,10 +306,10 @@ class GuiFormatter:
         self.clock.speedF()
         self.app.setPollTime(self.clock.clockSpeed)
 
-    def gradesButton(self):                    #Open "carmen" subwindow
-        '''self.app.destroySubWindow("Carmen")
-        self.initializeSubWindow("Carmen", script.carmen(self.student.expLevel))
-        self.app.showSubWindow("Carmen", hide = True)'''
+    def gradesButton(self):                    #Open grades subwindow
+        '''self.app.destroySubWindow("Grades")
+        self.initializeSubWindow("Grades", script.gradesWindow(self.student.expLevel))
+        self.app.showSubWindow("Grades", hide = True)'''
         if Game.started:
             self.getGrades()
         else:
@@ -311,7 +317,10 @@ class GuiFormatter:
 
     def loadButton(self):                      #Trigger loading the game
         nameAndPath = self.getLoadFileName()
-        self.loadInfo(nameAndPath)
+        if nameAndPath == 'DoNotLoadGame':
+            pass
+        else:
+            self.loadInfo(nameAndPath)
 
     def helpButton(self):                      #Open "Help" subwindow
         self.app.showSubWindow("Help", hide = True)
@@ -365,9 +374,11 @@ class GuiFormatter:
     def getLoadFileName(self):
         dir = str(os.path.dirname(os.path.abspath(__file__))) + "/save_files/"
         nameAndPath = self.app.openBox(title= 'Choose File to Load', dirName = dir, fileTypes = [('text', '*.txt')])
-        if not (dir in nameAndPath):
+        if not (dir in nameAndPath) and len(nameAndPath) != 0:
              self.app.warningBox("Invalid Entry", "Only files from saved_files may be loaded. Please choose from starting directory.")
              nameAndPath = self.getLoadFileName()
+        if len(nameAndPath) == 0:
+            return 'DoNotLoadGame'
         return nameAndPath
 
     def ready(self):                                 #Launch the gui window
@@ -436,7 +447,8 @@ class Clock:
         day = self.clockDay
         hr = self.clockHour
         sem = self.semester
-        return [day, hr, sem]
+        ns = Clock.newSemester
+        return [day, hr, sem, ns]
 
 
 class Student:
@@ -527,13 +539,19 @@ class Course:
         self.difficulty = cls[4]
         self.importantDates = cls[5]
         self.hwDueDate = cls[6]
-        self.grades = []
+        self.hwNumber = 1
+        self.testNumber = 1
+        self.grades = {}
 
     def addHomeworkGrade(self):
-        self.grades.append(calc.homeworkGrade(self.student, self.difficulty))
+        key = 'Homework #' + str(self.hwNumber)
+        self.grades[key] = (calc.homeworkGrade(self.student, self.difficulty))
+        self.hwNumber += 1
 
     def addTestGrade(self):
-        self.grades.append(calc.testGrade(self.student, self.difficulty))
+        key = 'Test #' + str(self.testNumber)
+        self.grades[key] = (calc.testGrade(self.student, self.difficulty))
+        self.testNumber += 1
 
     def getGrade(self):
         if len(self.grades) == 0:
@@ -543,7 +561,7 @@ class Course:
             return calc.calculateGrade(self.grades)
 
     def increaseDifficulty(self):
-        self.difficulty += 0.25
+        self.difficulty += 0.15
 
     def gatherCourseInfo(self):
         cn = self.courseName
@@ -554,8 +572,11 @@ class Course:
         id = self.importantDates
         hw = self.hwDueDate
         gr = self.grades
+        hn = self.hwNumber
+        tn = self.testNumber
 
-        return [cn, md, st, et, df, id, hw, gr]
+
+        return [cn, md, st, et, df, id, hw, gr, hn, tn]
 
 
 class SaveState:
