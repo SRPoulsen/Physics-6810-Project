@@ -34,7 +34,7 @@ def homeworkGrade(student, difficulty):
     return [grade, 10]
 
 def testGrade(student, difficulty):
-    center = 40 + (((1.5 * student.expLevel + (student.exp / 100)) - difficulty) * 4)
+    center = 45 + ((student.expLevel + (student.exp / 100) - difficulty) * 5)
     std = student.stress / 8
     grade = round(np.random.normal(center, std), 2)
     if grade > 50:

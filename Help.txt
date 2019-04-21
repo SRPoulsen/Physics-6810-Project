@@ -1,0 +1,13 @@
+ -- Buttons -- 
+
+Study: Student will study, causing experience and stress to increase and energy to decrease
+Relax: Student will relax, causing stress to decrease (rapidly) and energy to increase (slowly) 
+Sleep: Student will sleep, causing energy to increase (rapidly) and stress to decrease (slowly) 
+Play: Causes time to move forward
+Pause: Stops time from moving 
+Grades: Displays grades from your current class, as well as final grades in previous classes
+Slow: Causes time to move slowly
+Medium: Cause time to move moderately fast
+Fast: Causes time to move very fast
+Save: Saves your game so you can load it later
+Load: Load a previous save file
