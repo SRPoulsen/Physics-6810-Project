@@ -59,7 +59,6 @@ class Game:
         # Everytime class is held the difficulty increases #
         if self.inClass:
             self.course.increaseDifficulty()
-            print(self.course.difficulty)
 
         # Turn in homework every week and take tests on important days #
         self.turnInHomework()
@@ -73,10 +72,12 @@ class Game:
         # If the student is too stressed, end the game #
         if self.student.isTooStressed:
             self.gui.gameOverStress()
+            self.gui.endGame()
 
         # If the student makes it to the last semester, end the game #
         if self.clock.semester > 8 and Clock.newSemester:
             self.gui.gameWin()
+            self.gui.endGame()
 
     def checkIfInClass(self):
         if (str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) in self.course.meetingDays) and (self.clock.clockHour == self.course.startTime):
@@ -89,9 +90,9 @@ class Game:
             Game.ALL_GRADES[self.course.courseName] = self.course.grades          #Save grades as hash {course : grade}
             finalGrade = self.course.getGrade()
             Game.FINAL_GRADES[self.course.courseName] = finalGrade                #Save grades as hash {course : grade}
-            print('\nFinal Grades:' + str(Game.FINAL_GRADES))
             if finalGrade < 70.0:
                 self.gui.gameOverFailed()
+                self.gui.endGame()
 
         self.course = Course(Game.COURSE_LIST[self.clock.semester - 1], self.clock, self.student)
         self.student.expLevel = 1
@@ -100,8 +101,8 @@ class Game:
         self.returnCourseInfo()
         Clock.newSemester = False
 
-    def returnCourseInfo(self):
-        self.gui.newSemesterMessage(self.course)
+    def returnCourseInfo(self, flag = 'new'):
+        self.gui.newSemesterMessage(self.course, flag)
 
     def turnInHomework(self):
         if self.inClass and str(Clock.WEEK_DAYS[self.clock.clockDay % 7]) == self.course.hwDueDate and not self.turnedInHw:
@@ -176,6 +177,7 @@ class Game:
         self.course.grades = info[7]
         self.course.hwNumber = info[8]
         self.course.testNumber = info[9]
+
 
 class GuiFormatter:
     created = False                             #There has never been a created GUI before
@@ -342,9 +344,9 @@ class GuiFormatter:
         else:
             self.loadInfo(nameAndPath)
 
-    def ccButton(self):                      #Open "Current Course Info" alert
+    def ccButton(self):                        #Open "Current Course Info" alert
         if Game.started:
-            self.showCourseInfo()
+            self.showCourseInfo("old")
         else:
             pass
 
@@ -404,26 +406,26 @@ class GuiFormatter:
             return 'DoNotLoadGame'
         return nameAndPath
 
-    def tiredPlayerAlert(self):
+    def tiredPlayerAlert(self):                      #Alerts the player that they're too tired to study
         self.app.warningBox("You Fell Asleep!", script.tiredPlayer())
         GuiFormatter.energyAlertGiven = True
 
-    def newSemesterMessage(self, course):
-        self.app.infoBox("Welcome to your new class!", script.newCourseIntro(course))
+    def newSemesterMessage(self, course, flag):      #Shows player information on their class, changes slightly depending on flag
+        self.app.infoBox("Course Information", script.newCourseIntro(course, flag))
 
     def ready(self):                                 #Launch the gui window
         self.app.go()
 
-    def gameOverStress(self):                        #Alerts player that they've lost because they are too stressed, destroys gui
+    def gameOverStress(self):                        #Alerts player that they've lost because they are too stressed
         self.app.warningBox("Game Over", "Sorry! You Lost.")
-        self.app.stop()
 
-    def gameOverFailed(self):                        #Alerts the player that they've lost because they fail their class, destroys gui
+    def gameOverFailed(self):                        #Alerts the player that they've lost because they fail their class
         self.app.warningBox("Game Over", "Sorry! You Lost.")
-        self.app.stop()
 
-    def gameWin(self):                               #Alerts player that they've won the game, destroys gui
+    def gameWin(self):                               #Alerts player that they've won the game
         self.app.warningBox("You Win", "Congratulations! You've won the game!")
+
+    def endGame(self):                               #Destroys gui
         self.app.stop()
 
 
@@ -436,8 +438,8 @@ class Clock:
         self.clockHour = 0             #Start at hour = 0
         self.semester = 1              #8 total semesters (4 years)
         self.clockIsRunning = False    #Start with the clock paused
-        self.clockSpeed = 700          #750 ms delay on clock
-        self.action = act       #Passes in the action that should be performed every loop of runClock
+        self.clockSpeed = 400          #700 ms delay on clock
+        self.action = act              #Passes in the action that should be performed every loop of runClock
 
     def startClock(self):           #Changes the status to "clock is running"
         if not self.clockIsRunning:             #Makes sure the clock wasn't already running
@@ -458,16 +460,16 @@ class Clock:
                 Clock.newSemester = True                     #Tells processTick to create the next course instance
             self.action(self.clockDay, self.clockHour)
 
-    def speedS(self):               #Slowest speed (1 hour per second)
-        self.clockSpeed = 700
+    def speedS(self):               #Slowest speed
+        self.clockSpeed = 400
 
     def speedM(self):               #Middle speed
-        self.clockSpeed = 300
+        self.clockSpeed = 200
 
     def speedF(self):               #Fasted speed
-        self.clockSpeed = 75
+        self.clockSpeed = 50
 
-    def militaryToAmPm(self, hour): #Takes in miltiary time, returns time in AM or PM as string
+    def militaryToAmPm(self, hour):    #Takes in miltiary time, returns time in AM or PM as string
         if hour < 12 and hour != 0:
             return "\tTime: " + str(hour) + " AM"
         if hour == 12:
@@ -477,7 +479,7 @@ class Clock:
         else:
             return "\tTime: " + str(hour - 12) + " PM"
 
-    def gatherClockInfo(self):      #Collects all information that needs to be saved, gives it to Game as a list
+    def gatherClockInfo(self):         #Collects all information that needs to be saved, gives it to Game as a list
         day = self.clockDay
         hr = self.clockHour
         sem = self.semester
@@ -488,7 +490,7 @@ class Clock:
 class Student:
     stressBaseRate = 0.5    #per hour
     expBaseRate = 2.0       #per hour
-    energyBaseRate = 1.0    #per hour
+    energyBaseRate = 0.5    #per hour
 
     def __init__(self):
 
@@ -501,24 +503,31 @@ class Student:
         self.isTooStressed = False
         self.isTooTired = False
 
-    def getExpRate(self):
+    def getExpRate(self):           #calculates how much the exp should change this tick
         return Student.expBaseRate * (1/self.expLevel)
 
-    def getStressRate(self):
+    def getStressRate(self):        #calculates how much the stess should change this tick
         return Student.stressBaseRate
 
-    def getEnergyRate(self):
+    def getEnergyRate(self):        #calculates how much the energy should change this tick
         if self.studentState['studying']:
             return -Student.energyBaseRate * 1.5
         if self.studentState['relaxing']:
             return Student.energyBaseRate
         if self.studentState['sleeping']:
             if self.isTooTired:
-                return Student.energyBaseRate * 2.5
+                return Student.energyBaseRate * 2
             else:
                 return Student.energyBaseRate * 5
 
-    def stressTick(self):
+    def expTick(self):              #performs the exp tick
+        if self.studentState['studying']:
+            self.exp += self.getExpRate()
+        if self.exp > 100:
+            self.exp = 0
+            self.expLevel += 1
+
+    def stressTick(self):           #performs the stress tick
         if self.studentState['studying']:
             self.stress += self.getStressRate()
         if self.studentState['relaxing']:
@@ -531,14 +540,7 @@ class Student:
             self.isTooStressed = True
             self.stress = 100
 
-    def expTick(self):
-        if self.studentState['studying']:
-            self.exp += self.getExpRate()
-        if self.exp > 100:
-            self.exp = 0
-            self.expLevel += 1
-
-    def energyTick(self):
+    def energyTick(self):           #performs the energy tick
         self.energy += self.getEnergyRate()
         if self.energy > 100:              #Upper limit for energy is 100
             self.energy = 100
@@ -549,7 +551,7 @@ class Student:
             self.isTooTired = False
             GuiFormatter.energyAlertGiven = False
 
-    def gatherStudentInfo(self):
+    def gatherStudentInfo(self):    #gathers all the important info about student, returns a list of this info
         nm = self.name
         ss = self.studentState
         lvl = self.expLevel
@@ -561,24 +563,24 @@ class Student:
 
 
 class Course:
-    semesterLength = 62
+    semesterLength = 62     #Fixed for all classes
 
     def __init__(self, cls, clk, stu):
 
         self.clock = clk
         self.student = stu
-        self.courseName = cls[0]
-        self.meetingDays = cls[1]
-        self.startTime = cls[2]
-        self.endTime = cls[3]
-        self.difficulty = cls[4]
-        self.importantDates = cls[5]
-        self.hwDueDate = cls[6]
-        self.hwNumber = 1
-        self.testNumber = 1
-        self.grades = {}
+        self.courseName = cls[0]          #Name of the class
+        self.meetingDays = cls[1]         #Which days the class meets
+        self.startTime = cls[2]           #What time the class starts
+        self.endTime = cls[3]             #What time the class ends
+        self.difficulty = cls[4]          #How difficult is the class to begin with (difficulty increases as semester goes on)
+        self.importantDates = cls[5]      #What days are tests/lab reports due
+        self.hwDueDate = cls[6]           #What day of the week is homework due
+        self.hwNumber = 1                 #reintialize each new class to start on homework #1
+        self.testNumber = 1               #reintialize each new class to start on test #1
+        self.grades = {}                  #dictionary to keep track of what grade you get on what assignment
 
-    def addHomeworkGrade(self):
+    def addHomeworkGrade(self):               #generate a homework grade based on exp/stress level and class difficulty, append to grades dictionary
         key = 'Homework #' + str(self.hwNumber)
         self.grades[key] = (calc.homeworkGrade(self.student, self.difficulty))
         self.hwNumber += 1
@@ -586,18 +588,18 @@ class Course:
     def addTestGrade(self):
         key = 'Test #' + str(self.testNumber)
         self.grades[key] = (calc.testGrade(self.student, self.difficulty))
-        self.testNumber += 1
+        self.testNumber += 1                 #generate a test grade based on exp/stress level and class difficulty, append to grades dictionary
 
-    def getGrade(self):
+    def getGrade(self):                      #calculate student's current grade
         if len(self.grades) == 0:
             return "No Grades Yet"
         else:
             return calc.calculateGrade(self.grades)
 
-    def increaseDifficulty(self):
+    def increaseDifficulty(self):            #increase the difficulty of the class
         self.difficulty += 0.15
 
-    def gatherCourseInfo(self):
+    def gatherCourseInfo(self):              #gather all important info, save to a list
         cn = self.courseName
         md = self.meetingDays
         st = self.startTime
@@ -616,11 +618,11 @@ class Course:
 class SaveState:
 
     def __init__(self):
-        self.path = str(os.path.dirname(os.path.abspath(__file__))) + "/save_files/"
+        self.path = str(os.path.dirname(os.path.abspath(__file__)))      #Finds current directory
 
     def save(self, gameState, fileName):
         # Create the full path to the save_files folder #
-        fileNameAndPath = self.path + str(fileName) + '.txt'
+        fileNameAndPath = self.path + "/save_files/" + str(fileName) + '.txt'
 
         # Save the gamestate as a dict, easier for json to read and dump #
         saveinfo = {}
@@ -636,7 +638,7 @@ class SaveState:
 
         savefile.close()
 
-    def load(self, fileName):
+    def load(self, gameState, fileName):
 
         # Open the file and save it as 'loadedData' #
         with open(fileName) as json_file:
@@ -646,51 +648,3 @@ class SaveState:
 
 #Start the game
 x = Game()
-
-#Testing Notes:
-#   slow speed set to 10 instead of 750 (Clock speedS function)
-#   Tick rate for exp and stress is too fast (Student __init__ function)
-#   Grades button functionality changed (GuiFormatter gradesButton function)
-
-
-#TODO:
-##Add functionality to energy level (in student)
-#   Go from 100 to 75 over course of normal day (16 hours)
-#   below 50 increases stress, decreases exp gain
-#   below 25, increases stress, decreases exp gain further
-##Continue on script
-##Overall improvement to layout
-#   Figure out the best layout for buttons
-#   Where will text be displayed?
-##Stretch goal: Include functionality to allow player to create a weekly schedule
-#   pre-set actions for certain times and then let the program autorun their schedule
-##When Game is over, instead of closing the Gui right away, tell the player their stats
-##Going to need a "pack up" function which returns a list of strings
-#   These lists will get passed to functions in script.py in order to fill out things like the report card
-##Eventually, the subwindows might need their own initialization functions since they might be different sizes and stuff
-
-##Important info that needs to be saved/loaded
-#   student
-#       Name
-#       studentState
-#       expLevel
-#       exp
-#       stress
-#       energy
-#       isTooTired
-#   clock
-#       clockDay
-#       clockHour
-#       semester
-#       Clock.newSemester
-#   course
-#       courseName
-#       meetingDays
-#       startTime
-#       endTime
-#       difficulty
-#       importantDates
-#       hwDueDate
-#       grades
-#   game
-#       FINAL_GRADES

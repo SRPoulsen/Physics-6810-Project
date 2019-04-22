@@ -1,0 +1,36 @@
+All external library imports:
+
+appJar
+os
+json
+math
+random
+numpy
+
+Main.py: 
+
+This is the file that should be run in terminal to start the game. It contains all the logic in the game, and consists of the following 6 classes.
+
+-Game: This class is called to start the game, and initializes all other instances of the rest of the classes. It also contains the 'processTick' function, which is called every time the clock ticks in the game. The rest of the functions in the Game class revolve around passing data to and from the other classes in this file.
+
+-GuiFormatter: This class handles everything that the gui puts on the screen. It takes data from the other classes and displays it.
+
+-Clock: This class handles the in game clock and how fast it runs. It also keeps track of the current date and semester.
+
+-Student: This class keeps track of the student and their name, experience, stress, and energy.
+
+-Course: This class keeps track of all the course information, such as the name of the course, the time it meets, and the grades you have. This class is reinitialized at the beginning of each in-game semester, after the old grades are saved.
+
+-SaveState: This course handles the saving and loading features.
+
+courseInfo.py:
+
+This file contains the information for each of the 8 courses you take in the game, and is called when the course instance is reinitialized at the beginning of each semester.
+
+script.py:
+
+This file really only contains strings, and is used to keep the main file from being bogged down with a lot of words. GuiFormatter calls functions from it often to display text.
+
+calculations.py:
+
+This file contains the core mathematics behind the game, and mostly serves to create random numbers given some inputs. Mainly, this file calculates homework grades and test grades given the students stress, experience level, and the difficulty of the course.

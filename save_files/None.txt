@@ -1,1 +1,0 @@
-{"student": ["dfg'", {"studying": false, "sleeping": false, "relaxing": true}, 1, 0, 0, 100, false], "clock": [0, 3, 1, false], "course": ["Mechanics One", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], 9, 10, 1.0, [10, 20, 40, 60], "Thursday", {}, 1, 1], "FINAL_GRADES": {}, "ALL_GRADES": {}}

@@ -12,11 +12,10 @@ def welcomeWindow(studentName):
     message = "Hello, " + str(studentName) + ", and welcome to your first semester as a physics major at OSU!\n\n"
     message += "You'll be starting your first class tomorrow, and if you want to succeed you'll need to study hard. Be careful, though! "
     message += "If you stress yourself out too much, it's game over!\n\n"
-    message += "For help on how to play the game (including current course information), click the 'Help' button"
 
     return message
 
-def newCourseIntro(course):
+def newCourseIntro(course, flag):
     stringWeekDays = ''
     for day in course.meetingDays:
         stringWeekDays += '\n' + str(day)
@@ -25,15 +24,15 @@ def newCourseIntro(course):
     for day in course.importantDates:
         stringTestDays += '\n' + str(day)
 
-    message = "\nWelcome to " + str(course.courseName) + "!"
-    message += "\n\nYour class will be held at " + str(course.startTime) + " AM on" + stringWeekDays
+    if flag == 'new':
+        message = "\nWelcome to " + str(course.courseName) + "!"
+        message += "\n\nYour class will be held at " + str(course.startTime) + " AM on" + stringWeekDays
+    if flag == 'old':
+        message = "\n\nYour class is held at " + str(course.startTime) + " AM on" + stringWeekDays
+
     message += "\n\nHomework is due every " + str(course.hwDueDate)
-    message += "\n\nYou have tests on days " + stringTestDays
+    message += "\n\nEach semester is 62 days long, and you have tests on days" + stringTestDays
 
-    return message
-
-def helpWindow(course):
-    message = ""
     return message
 
 def gradesWindow(grades):
